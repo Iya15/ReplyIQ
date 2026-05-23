@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Next.js
+.next
+out
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+
+# Laravel
+vendor
+storage/app/public
+storage/framework/cache
+storage/framework/sessions
+storage/framework/testing
+storage/framework/views
+storage/logs/*.log
+bootstrap/cache/*.php
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Turbo
+.turbo
+
+# Testing
+coverage
+.phpunit.result.cache
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Package manager
+pnpm-debug.log*
+
+# Misc
+*.local
