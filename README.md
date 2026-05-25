@@ -1,73 +1,126 @@
 # ReplyIQ
 
-ReplyIQ is a multi-tenant SaaS platform that lets businesses deploy AI-powered customer support
-chatbots trained exclusively on their own knowledge — documents, websites, and FAQs — and embed
-them on any website with a single script tag. Answers are grounded only in retrieved content via
-RAG, eliminating hallucination and keeping every response on-brand.
+Multi-tenant SaaS platform for deploying AI-powered customer support chatbots. Businesses train
+chatbots on their own knowledge (documents, websites, FAQs) via RAG, then embed them anywhere with
+a single `<script>` tag. Every answer is grounded in retrieved content — no hallucination, fully
+on-brand.
+
+**Status:** Phase 1 complete (auth, org management, chatbot CRUD). Phase 2 (AI/RAG) in progress.
 
 ## Monorepo Structure
 
 ```
 replyiq/
 ├── apps/
-│   ├── web/      # Next.js 15 dashboard + marketing site
-│   ├── widget/   # Vite embeddable widget (iframe-isolated)
-│   └── api/      # Laravel 11 REST API
+│   ├── web/       Next.js 16 dashboard (App Router, TypeScript)
+│   ├── api/       Laravel 11 REST API (Sanctum, Horizon, pgvector)
+│   └── widget/    Embeddable chat widget — Phase 2
 ├── packages/
-│   ├── ui/         # Shared shadcn/ui components
-│   ├── types/      # Shared TypeScript DTOs
-│   ├── api-client/ # Typed fetch client
-│   └── config/     # ESLint, tsconfig, Tailwind preset
+│   ├── api-client/ Typed fetch client shared by web + widget
+│   └── config/     Shared Tailwind preset, tsconfig bases
+├── docs/
+│   └── architecture/decisions/  Architecture Decision Records
 └── turbo.json
 ```
 
-## Prerequisites
+## Dev Quickstart
 
-- [Node.js](https://nodejs.org/) >= 20 LTS
-- [pnpm](https://pnpm.io/) >= 9 (`npm install -g pnpm@9`)
-- [PHP](https://www.php.net/) >= 8.3 (for the Laravel API)
-- [Composer](https://getcomposer.org/) >= 2
+You need three terminals running simultaneously.
 
-## Quick Start
+**Prerequisites:** Node ≥ 20, pnpm ≥ 9, PHP 8.2, Composer 2, PostgreSQL 16 with pgvector.
 
 ```bash
-# 1. Install all workspace dependencies
+# 1. Clone and install
+git clone https://github.com/your-org/replyiq.git && cd replyiq
 pnpm install
+cd apps/api && composer install && cd ../..
 
-# 2. Verify workspaces are registered
-pnpm -r ls
-
-# 3. Start all dev servers concurrently (once apps/ exist)
-pnpm dev
-
-# 4. Build all packages/apps
-pnpm build
-
-# 5. Lint all workspaces
-pnpm lint
-
-# 6. Type-check all workspaces
-pnpm type-check
+# 2. Configure env files
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local   # if not present, create manually
 ```
 
-## Environment Setup
+**Terminal 1 — API server**
+```bash
+cd apps/api
+php artisan key:generate
+php artisan migrate
+php artisan serve          # http://localhost:8000
+```
 
-Each app has its own `.env` file. Copy the example and fill in your values:
+**Terminal 2 — Queue worker** (needed for email verification, password reset)
+```bash
+cd apps/api
+php artisan queue:listen --tries=1
+```
+
+**Terminal 3 — Next.js dev server**
+```bash
+pnpm --filter web dev      # http://localhost:3000
+```
+
+## Environment Variables
+
+### `apps/api/.env` (required)
+
+| Variable | Example | Notes |
+|---|---|---|
+| `APP_KEY` | *(generated)* | `php artisan key:generate` |
+| `DB_HOST` | `127.0.0.1` | PostgreSQL host |
+| `DB_DATABASE` | `replyiq` | Must exist, pgvector extension enabled |
+| `DB_USERNAME` / `DB_PASSWORD` | `replyiq` / `secret` | |
+| `FRONTEND_URL` | `http://localhost:3000` | Used in email verification links |
+| `MAIL_MAILER` | `log` (dev) / `smtp` (prod) | |
+| `OPENAI_API_KEY` | `sk-...` | Phase 2 — leave empty for now |
+
+### `apps/web/.env.local` (required)
+
+| Variable | Example | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | API base URL |
+
+## Common Commands
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
-cp apps/api/.env.example apps/api/.env
+# Run all tests
+pnpm test                         # turbo: runs vitest (web) + pest (api)
+
+# Type-check all packages
+pnpm type-check
+
+# Lint all packages
+pnpm lint
+
+# Build everything
+pnpm build
+
+# Format (Prettier for TS, Pint for PHP)
+pnpm format                       # TS/JSON/CSS
+cd apps/api && vendor/bin/pint    # PHP
 ```
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui |
-| Widget | React 18 + Vite + TypeScript |
-| Backend | Laravel 11 + Sanctum + Horizon |
-| Real-time | Laravel Reverb |
-| Database | PostgreSQL 16 + pgvector |
-| AI | OpenAI (gpt-4o-mini) + Ollama fallback |
+| Frontend | Next.js 16 · React 19 · TypeScript · Tailwind CSS v3 · shadcn/ui |
+| State | Zustand v5 · TanStack Query v5 |
+| Backend | Laravel 11 · Sanctum · Horizon · Reverb |
+| Database | PostgreSQL 16 · pgvector |
+| AI (Phase 2) | OpenAI gpt-4o-mini · RAG via pgvector |
+| Build | Turborepo · pnpm workspaces |
+| CI/CD | GitHub Actions · Vercel (web) · Render (api) |
 
-See `docs/replyiq-blueprint.md` for the full architecture reference.
+## Staging
+
+| Service | URL |
+|---|---|
+| Dashboard | https://staging.replyiq.com |
+| API | https://api-staging.replyiq.com |
+
+See [docs/deploy/staging.md](docs/deploy/staging.md) for provisioning instructions.
+
+## Architecture
+
+See [docs/architecture/decisions/](docs/architecture/decisions/) for Architecture Decision Records.
+Full blueprint: [replyiq-blueprint.md](replyiq-blueprint.md).
