@@ -1,0 +1,19 @@
+ReplyIQ Help Center
+
+Getting Started
+
+ReplyIQ is an AI-powered chatbot platform that helps businesses automate customer support. Once you sign up, you can create your first chatbot in under five minutes by navigating to the dashboard and clicking New Chatbot.
+
+Your chatbot can be trained on any combination of documents, web pages, and manual text entries. The knowledge base powers all responses. The more high-quality content you add, the better your chatbot performs.
+
+Key Features
+
+ReplyIQ supports PDF, DOCX, and plain text uploads. Web page crawling is available on the Pro plan and above. All knowledge base content is processed asynchronously and ready within a few minutes of uploading.
+
+Frequently Asked Questions
+
+Q: How do I update my chatbot's knowledge base?
+A: Navigate to the chatbot's Knowledge tab, click Add Document, and upload your file. Updates are processed automatically and go live within two minutes.
+
+Q: Can I use ReplyIQ on multiple websites?
+A: Yes. Each chatbot has a unique embed code. You can add the same chatbot to as many domains as you specify in the Embed settings.

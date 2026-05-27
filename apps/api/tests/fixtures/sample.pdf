@@ -1,0 +1,59 @@
+%PDF-1.4
+1 0 obj
+<</Type /Catalog /Pages 2 0 R /Info 6 0 R>>
+endobj
+2 0 obj
+<</Type /Pages /Kids [3 0 R] /Count 1>>
+endobj
+3 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources <</Font <</F1 5 0 R>>>>>>
+endobj
+4 0 obj
+<</Length 1288>>
+stream
+BT
+/F1 11 Tf
+14 TL
+72 720 Td
+(ReplyIQ Help Center) Tj T*
+() Tj T*
+(Getting Started) Tj T*
+() Tj T*
+(ReplyIQ is an AI-powered chatbot platform that helps businesses automate customer support. Once you sign up, you can create your first chatbot in under five minutes by navigating to the dashboard and clicking New Chatbot.) Tj T*
+() Tj T*
+(Your chatbot can be trained on any combination of documents, web pages, and manual text entries. The knowledge base powers all responses. The more high-quality content you add, the better your chatbot performs.) Tj T*
+() Tj T*
+(Key Features) Tj T*
+() Tj T*
+(ReplyIQ supports PDF, DOCX, and plain text uploads. Web page crawling is available on the Pro plan and above. All knowledge base content is processed asynchronously and ready within a few minutes of uploading.) Tj T*
+() Tj T*
+(Frequently Asked Questions) Tj T*
+() Tj T*
+(Q: How do I update my chatbot's knowledge base?) Tj T*
+(A: Navigate to the chatbot's Knowledge tab, click Add Document, and upload your file. Updates are processed automatically and go live within two minutes.) Tj T*
+() Tj T*
+(Q: Can I use ReplyIQ on multiple websites?) Tj T*
+(A: Yes. Each chatbot has a unique embed code. You can add the same chatbot to as many domains as you specify in the Embed settings.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<</Type /Font /Subtype /Type1 /BaseFont /Helvetica>>
+endobj
+6 0 obj
+<</Title (ReplyIQ Help Center)>>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000068 00000 n 
+0000000123 00000 n 
+0000000243 00000 n 
+0000001580 00000 n 
+0000001648 00000 n 
+trailer
+<</Size 7 /Root 1 0 R /Info 6 0 R>>
+startxref
+1696
+%%EOF
