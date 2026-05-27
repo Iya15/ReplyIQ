@@ -1,0 +1,209 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotResource\\:\\:\\$language\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotResource\\:\\:\\$public_id\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotResource\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$ai_persona\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$ai_tone\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$allowed_domains\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$avatar_url\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$fallback_message\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$font_family\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$logo_url\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$max_tokens\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$model\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$placeholder_text\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$position\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$primary_color\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$retrieval_k\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$show_branding\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$similarity_threshold\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$temperature\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$text_color\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$theme\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatbotSettingsResource\\:\\:\\$welcome_message\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatbotSettingsResource.php
+
+		-
+			message: "#^Call to an undefined method App\\\\Http\\\\Resources\\\\MeResource\\:\\:currentOrganization\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Resources/MeResource.php
+
+		-
+			message: "#^Call to an undefined method App\\\\Http\\\\Resources\\\\MeResource\\:\\:organizations\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Resources/MeResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\OrganizationResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/OrganizationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\OrganizationResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/OrganizationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\OrganizationResource\\:\\:\\$plan\\.$#"
+			count: 1
+			path: app/Http/Resources/OrganizationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\OrganizationResource\\:\\:\\$slug\\.$#"
+			count: 1
+			path: app/Http/Resources/OrganizationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\UserResource\\:\\:\\$avatar_url\\.$#"
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\UserResource\\:\\:\\$email\\.$#"
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\UserResource\\:\\:\\$email_verified_at\\.$#"
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\UserResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\UserResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Conversation not found\\.$#"
+			count: 1
+			path: app/Models/Chatbot.php
+
+		-
+			message: "#^Parameter \\#1 \\$related of method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:hasMany\\(\\) expects class\\-string\\<Illuminate\\\\Database\\\\Eloquent\\\\Model\\>, string given\\.$#"
+			count: 1
+			path: app/Models/Chatbot.php
+
+		-
+			message: "#^Unable to resolve the template type TRelatedModel in call to method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:hasMany\\(\\)$#"
+			count: 1
+			path: app/Models/Chatbot.php
+
+		-
+			message: "#^Property App\\\\Services\\\\Embedding\\\\OllamaEmbeddingClient\\:\\:\\$host is never read, only written\\.$#"
+			count: 1
+			path: app/Services/Embedding/OllamaEmbeddingClient.php
+
+		# spatie/crawler 9.3 uses PHP 8.4 property hooks in CrawlProgress, which
+		# PHPStan cannot parse when running under PHP 8.2 compatibility.
+		# This is a vendor incompatibility — our code is correct.
+		-
+			message: "#^Parameter .+ of method App\\\\Services\\\\Crawling\\\\ReplyIqCrawlObserver\\:\\:crawled\\(\\) has invalid type Spatie\\\\Crawler\\\\CrawlProgress\\.$#"
+			count: 1
+			path: app/Services/Crawling/ReplyIqCrawlObserver.php

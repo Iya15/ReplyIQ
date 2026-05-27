@@ -1,0 +1,21 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 6
+
+    paths:
+        - app
+
+    # Exclude generated / third-party files that produce noise.
+    excludePaths:
+        - app/Http/Middleware/HandleInertiaRequests.php
+
+    # Laravel magic that PHPStan can't infer without runtime information.
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+
+    # Eloquent dynamic properties (e.g. $user->email) are resolved by Larastan's
+    # model reflection. Set to true only after all models have @property docblocks.
+    reportUnmatchedIgnoredErrors: false

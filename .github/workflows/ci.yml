@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ── web ──────────────────────────────────────────────────────────────────────
+jobs:
+  web:
+    name: Web (type-check · lint · test · build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm --filter web type-check
+
+      - name: Lint
+        run: pnpm --filter web lint
+
+      - name: Test
+        run: pnpm --filter web test
+        env:
+          # Vitest doesn't need a real API — everything is mocked in tests.
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+
+      - name: Build
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+
+# ── api ──────────────────────────────────────────────────────────────────────
+  api:
+    name: API (pint · phpstan · pest)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: replyiq_test
+          POSTGRES_USER: replyiq
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U replyiq -d replyiq_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_pgsql, redis, pcntl, posix
+          coverage: xdebug
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('apps/api/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer dependencies
+        working-directory: apps/api
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Copy env and generate app key
+        working-directory: apps/api
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run migrations
+        working-directory: apps/api
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: replyiq_test
+          DB_USERNAME: replyiq
+          DB_PASSWORD: secret
+        run: php artisan migrate --force
+
+      - name: Check formatting (pint)
+        working-directory: apps/api
+        run: vendor/bin/pint --test
+
+      - name: Static analysis (phpstan level 6)
+        working-directory: apps/api
+        run: vendor/bin/phpstan analyse --memory-limit=512M
+
+      - name: Run tests with coverage
+        working-directory: apps/api
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: replyiq_test
+          DB_USERNAME: replyiq
+          DB_PASSWORD: secret
+        run: vendor/bin/pest --coverage-clover coverage.xml --min=80
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/coverage.xml
+          retention-days: 7
+
+# ── widget ────────────────────────────────────────────────────────────────────
+  widget:
+    name: Widget (placeholder)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Placeholder
+        run: echo "Widget build — Phase 2"
