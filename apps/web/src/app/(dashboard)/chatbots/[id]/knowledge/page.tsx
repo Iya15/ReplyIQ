@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { FileText, FileUp, Globe, Plus, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +13,7 @@ import {
 import { useDocuments } from '@/hooks/use-documents';
 import { UploadDialog } from '@/components/documents/upload-dialog';
 import { TextDialog } from '@/components/documents/text-dialog';
+import { UrlDialog } from '@/components/documents/url-dialog';
 import { DocumentRow } from '@/components/documents/document-row';
 import type { DocumentStatus } from '@replyiq/api-client';
 
@@ -32,8 +33,25 @@ export default function KnowledgePage({ params }: PageProps) {
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | undefined>(undefined);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [textOpen, setTextOpen] = useState(false);
+  const [urlOpen, setUrlOpen] = useState(false);
 
   const { data, isLoading } = useDocuments(id, statusFilter ? { status: statusFilter } : undefined);
+
+  // Keyboard shortcuts: u → upload, n → text, w → website (ignored when focus is in an input).
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
+      if (e.key === 'u') { e.preventDefault(); setUploadOpen(true); }
+      if (e.key === 'n') { e.preventDefault(); setTextOpen(true); }
+      if (e.key === 'w') { e.preventDefault(); setUrlOpen(true); }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
   const documents = data?.data ?? [];
   const total = data?.meta.total ?? 0;
 
@@ -68,10 +86,9 @@ export default function KnowledgePage({ params }: PageProps) {
               <Type className="mr-2 h-4 w-4" />
               Add text / FAQ
             </DropdownMenuItem>
-            <DropdownMenuItem disabled className="opacity-50">
+            <DropdownMenuItem onClick={() => setUrlOpen(true)}>
               <Globe className="mr-2 h-4 w-4" />
               Crawl website
-              <span className="ml-auto text-xs text-muted-foreground">Soon</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -141,6 +158,7 @@ export default function KnowledgePage({ params }: PageProps) {
 
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} chatbotId={id} />
       <TextDialog open={textOpen} onOpenChange={setTextOpen} chatbotId={id} />
+      <UrlDialog open={urlOpen} onOpenChange={setUrlOpen} chatbotId={id} />
     </div>
   );
 }

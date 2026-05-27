@@ -11,6 +11,7 @@ import type {
   DocumentSourceType,
   Paginated,
   StoreDocumentTextPayload,
+  StoreDocumentUrlPayload,
 } from '@replyiq/api-client';
 
 // ── Query keys ────────────────────────────────────────────────────────────────
@@ -32,10 +33,12 @@ function makeOptimisticDocument(file: File): Document {
     id: `optimistic-${Date.now()}`,
     title: file.name.replace(/\.[^.]+$/, ''),
     source_type: inferSourceType(file.name),
+    source_url: null,
     status: 'pending',
     error_message: null,
     char_count: null,
     chunk_count: null,
+    metadata: null,
     created_at: new Date().toISOString(),
     processed_at: null,
   };
@@ -94,10 +97,17 @@ export function useDocuments(chatbotId: string, filters?: DocumentFilters) {
     queryFn: () => documentsApi.list(chatbotId, filters),
     enabled: !!chatbotId,
     refetchInterval: (query) => {
-      const data = query.state.data as Paginated<Document> | undefined;
-      const docs = data?.data ?? [];
-      const hasActive = docs.some((d) => d.status === 'pending' || d.status === 'processing');
-      return hasActive ? 3_000 : false;
+      const docs = (query.state.data as Paginated<Document> | undefined)?.data ?? [];
+      // File/text/manual docs process in seconds → poll at 3s.
+      const hasFileActive = docs.some(
+        (d) => d.source_type !== 'url' && (d.status === 'pending' || d.status === 'processing'),
+      );
+      if (hasFileActive) return 3_000;
+      // URL crawls can take 5–15 minutes → 5s is frequent enough.
+      const hasUrlActive = docs.some(
+        (d) => d.source_type === 'url' && (d.status === 'pending' || d.status === 'processing'),
+      );
+      return hasUrlActive ? 5_000 : false;
     },
   });
 }
@@ -158,10 +168,12 @@ export function useAddTextDocument(chatbotId: string) {
         id: `optimistic-${Date.now()}`,
         title: data.title,
         source_type: 'manual',
+        source_url: null,
         status: 'pending',
         error_message: null,
         char_count: null,
         chunk_count: null,
+        metadata: null,
         created_at: new Date().toISOString(),
         processed_at: null,
       };
@@ -213,6 +225,58 @@ export function useDeleteDocument(chatbotId: string) {
 
     onSuccess: () => {
       toast.success('Document deleted');
+    },
+
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['documents', chatbotId] });
+    },
+  });
+}
+
+export function useAddUrlDocument(chatbotId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: StoreDocumentUrlPayload) => documentsApi.addUrl(chatbotId, data),
+
+    onMutate: async (data: StoreDocumentUrlPayload) => {
+      await queryClient.cancelQueries({ queryKey: documentsKey(chatbotId) });
+      const snapshot = queryClient.getQueryData<Paginated<Document>>(documentsKey(chatbotId));
+
+      // Derive a provisional title from the URL hostname while the job runs.
+      let title = data.url;
+      try { title = new URL(data.url).hostname; } catch { /* leave as full URL */ }
+
+      const optimistic: Document = {
+        id: `optimistic-${Date.now()}`,
+        title,
+        source_type: 'url',
+        source_url: data.url,
+        status: 'pending',
+        error_message: null,
+        char_count: null,
+        chunk_count: null,
+        metadata: null,
+        created_at: new Date().toISOString(),
+        processed_at: null,
+      };
+
+      queryClient.setQueryData<Paginated<Document>>(documentsKey(chatbotId), (old) =>
+        old ? { ...old, data: [optimistic, ...old.data] } : old,
+      );
+
+      return { snapshot };
+    },
+
+    onError: (err, _vars, context) => {
+      if (context?.snapshot !== undefined) {
+        queryClient.setQueryData(documentsKey(chatbotId), context.snapshot);
+      }
+      toast.error(err instanceof ApiError ? err.message : 'Failed to start crawl');
+    },
+
+    onSuccess: () => {
+      toast.success('Crawl started — this may take a few minutes');
     },
 
     onSettled: () => {

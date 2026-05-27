@@ -182,10 +182,14 @@ export interface Document {
   id: string;
   title: string;
   source_type: DocumentSourceType;
+  /** Only set for source_type === 'url' */
+  source_url: string | null;
   status: DocumentStatus;
   error_message: string | null;
   char_count: number | null;
   chunk_count: number | null;
+  /** URL docs include page_count, crawled_urls, max_pages after crawl completes */
+  metadata: Record<string, unknown> | null;
   created_at: string; // ISO 8601
   processed_at: string | null;
 }
@@ -197,4 +201,9 @@ export interface DocumentFilters {
 export interface StoreDocumentTextPayload {
   title: string;
   content: string;
+}
+
+export interface StoreDocumentUrlPayload {
+  url: string;
+  max_pages?: number; // 1–50 (free tier); default is 50 when omitted
 }

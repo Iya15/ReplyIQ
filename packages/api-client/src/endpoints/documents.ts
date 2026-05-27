@@ -5,6 +5,7 @@ import type {
   DocumentFilters,
   Paginated,
   StoreDocumentTextPayload,
+  StoreDocumentUrlPayload,
 } from '../types';
 
 export function createDocumentEndpoints(client: ApiClient) {
@@ -26,6 +27,10 @@ export function createDocumentEndpoints(client: ApiClient) {
     // DELETE /documents/{id}
     delete: (id: string) =>
       client.delete<ApiResponse<{ message: string }>>(`/documents/${id}`),
+
+    // POST /chatbots/{chatbotId}/documents/url → 202 { data: Document }
+    addUrl: (chatbotId: string, data: StoreDocumentUrlPayload) =>
+      client.post<ApiResponse<Document>>(`/chatbots/${chatbotId}/documents/url`, data),
 
     // POST /documents/{id}/reprocess → 202 { data: Document }
     reprocess: (id: string) =>

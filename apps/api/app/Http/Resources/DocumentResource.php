@@ -14,15 +14,17 @@ class DocumentResource extends JsonResource
         $doc = $this->resource;
 
         return [
-            'id' => $doc->id,
-            'title' => $doc->title,
-            'source_type' => $doc->source_type->value,
-            'status' => $doc->status->value,
+            'id'            => $doc->id,
+            'title'         => $doc->title,
+            'source_type'   => $doc->source_type->value,
+            'source_url'    => $doc->source_url,
+            'status'        => $doc->status->value,
             'error_message' => $doc->error_message,
-            'char_count' => $doc->char_count,
-            'chunk_count' => $doc->chunk_count,
-            'created_at' => $doc->created_at,
-            'processed_at' => $doc->processed_at,
+            'char_count'    => $doc->char_count,
+            'chunk_count'   => $doc->chunk_count,
+            'metadata'      => $doc->metadata,
+            'created_at'    => $doc->created_at,
+            'processed_at'  => $doc->processed_at,
         ];
     }
 }

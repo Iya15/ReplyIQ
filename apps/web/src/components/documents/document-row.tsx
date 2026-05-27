@@ -1,7 +1,7 @@
 'use client';
 
 import { formatDistanceToNow } from 'date-fns';
-import { File, FileText, FileType, Globe, MessageSquare, MoreHorizontal, RefreshCw, Trash2 } from 'lucide-react';
+import { ExternalLink, File, FileText, FileType, Globe, MessageSquare, MoreHorizontal, RefreshCw, Trash2 } from 'lucide-react';
 import type { Document, DocumentSourceType, DocumentStatus } from '@replyiq/api-client';
 import {
   DropdownMenu,
@@ -75,11 +75,25 @@ export function DocumentRow({ document: doc, chatbotId }: DocumentRowProps) {
   const reprocessMutation = useReprocessDocument(chatbotId);
   const { label, Icon } = SOURCE_META[doc.source_type] ?? SOURCE_META.manual;
   const isOptimistic = doc.id.startsWith('optimistic-');
+  const pageCount = (doc.metadata as { page_count?: number } | null)?.page_count;
 
   return (
     <tr className={cn('border-b last:border-0 transition-colors hover:bg-muted/30', isOptimistic && 'opacity-60')}>
       <td className="px-4 py-3 text-sm font-medium max-w-[240px]">
-        <span className="block truncate">{doc.title || 'Untitled'}</span>
+        {doc.source_type === 'url' && doc.source_url ? (
+          <a
+            href={doc.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={doc.source_url}
+            className="flex items-center gap-1 truncate hover:underline"
+          >
+            <span className="truncate">{doc.title || doc.source_url}</span>
+            <ExternalLink className="h-3 w-3 shrink-0 opacity-40" />
+          </a>
+        ) : (
+          <span className="block truncate">{doc.title || 'Untitled'}</span>
+        )}
       </td>
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -91,7 +105,16 @@ export function DocumentRow({ document: doc, chatbotId }: DocumentRowProps) {
         <StatusBadge status={doc.status} errorMessage={doc.error_message} />
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground tabular-nums">
-        {doc.chunk_count ?? '—'}
+        {pageCount != null ? (
+          <span
+            title={`${pageCount} page${pageCount !== 1 ? 's' : ''} crawled`}
+            className="cursor-help underline decoration-dotted decoration-muted-foreground/50 underline-offset-2"
+          >
+            {doc.chunk_count ?? '—'}
+          </span>
+        ) : (
+          doc.chunk_count ?? '—'
+        )}
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
         {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}

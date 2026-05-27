@@ -24,6 +24,7 @@ export type {
   Document,
   DocumentFilters,
   StoreDocumentTextPayload,
+  StoreDocumentUrlPayload,
 } from './types';
 
 // ApiError is a class — runtime value, importable without `type`
