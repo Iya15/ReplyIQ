@@ -5,7 +5,7 @@ chatbots on their own knowledge (documents, websites, FAQs) via RAG, then embed 
 a single `<script>` tag. Every answer is grounded in retrieved content — no hallucination, fully
 on-brand.
 
-**Status:** Phase 1 complete (auth, org management, chatbot CRUD). Phase 2 complete (AI/RAG pipeline, document ingestion, URL crawling, knowledge base UI).
+**Status:** Phase 1 complete (auth, org management, chatbot CRUD). Phase 2 complete (AI/RAG pipeline, document ingestion, URL crawling, knowledge base UI). Phase 3 in progress (chat widget public API, real-time streaming via Reverb).
 
 ## Monorepo Structure
 
@@ -29,9 +29,9 @@ replyiq/
 
 ## Dev Quickstart
 
-You need three terminals running simultaneously.
+You need **four terminals** running simultaneously (Phase 3 adds Reverb for real-time chat).
 
-**Prerequisites:** Node ≥ 20, pnpm ≥ 9, PHP 8.2, Composer 2, PostgreSQL 16 with pgvector.
+**Prerequisites:** Node ≥ 20, pnpm ≥ 9, PHP 8.2, Composer 2, PostgreSQL 16 with pgvector, Redis.
 
 ```bash
 # 1. Clone and install
@@ -41,7 +41,7 @@ cd apps/api && composer install && cd ../..
 
 # 2. Configure env files
 cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env.local   # if not present, create manually
+cp apps/web/.env.example apps/web/.env.local
 ```
 
 **Terminal 1 — API server**
@@ -52,13 +52,19 @@ php artisan migrate
 php artisan serve          # http://localhost:8000
 ```
 
-**Terminal 2 — Queue worker** (needed for email verification, document ingestion, URL crawling)
+**Terminal 2 — Reverb WebSocket server** (real-time token streaming)
 ```bash
 cd apps/api
-php artisan horizon          # or: php artisan queue:listen --tries=1
+php artisan reverb:start   # ws://localhost:8080
 ```
 
-**Terminal 3 — Next.js dev server**
+**Terminal 3 — Queue worker** (AI reply generation, document ingestion, URL crawling)
+```bash
+cd apps/api
+php artisan horizon        # or: php artisan queue:listen --tries=1
+```
+
+**Terminal 4 — Next.js dev server**
 ```bash
 pnpm --filter web dev      # http://localhost:3000
 ```
@@ -80,12 +86,23 @@ pnpm --filter web dev      # http://localhost:3000
 | `QUEUE_CONNECTION` | `redis` | Use `redis` with Horizon; `database` for local dev without Redis |
 | `REDIS_HOST` | `127.0.0.1` | Required when `QUEUE_CONNECTION=redis`; also used by Horizon & Reverb |
 | `REDIS_PORT` | `6379` | Default Redis port |
+| `REVERB_APP_ID` | `replyiq` | Reverb app identifier |
+| `REVERB_APP_KEY` | `replyiq-key` | Reverb app key (must match `NEXT_PUBLIC_REVERB_APP_KEY`) |
+| `REVERB_APP_SECRET` | `replyiq-secret` | Reverb app secret (server-side only, never expose) |
+| `REVERB_HOST` | `localhost` | Reverb server host |
+| `REVERB_PORT` | `8080` | Reverb WebSocket port |
+| `REVERB_SCHEME` | `http` | `http` for local dev, `https` for production |
+| `BROADCAST_CONNECTION` | `reverb` | Set to `reverb` to enable real-time streaming |
 
 ### `apps/web/.env.local` (required)
 
 | Variable | Example | Notes |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | API base URL |
+| `NEXT_PUBLIC_REVERB_APP_KEY` | `replyiq-key` | Must match `REVERB_APP_KEY` in `apps/api/.env` |
+| `NEXT_PUBLIC_REVERB_HOST` | `localhost` | Reverb server host |
+| `NEXT_PUBLIC_REVERB_PORT` | `8080` | Reverb WebSocket port |
+| `NEXT_PUBLIC_REVERB_SCHEME` | `http` | `http` for local dev, `https` for production |
 
 ## Common Commands
 

@@ -4,7 +4,8 @@ namespace App\Jobs;
 
 use App\Enums\MessageRole;
 use App\Enums\MessageStatus;
-use App\Events\MessageGenerated;
+use App\Events\MessageCompleted;
+use App\Events\MessageTokenStreamed;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\Ai\RagPipeline;
@@ -74,13 +75,22 @@ class GenerateAiReplyJob implements ShouldQueue
             }
         }
 
-        // ── 3. Run RAG pipeline ────────────────────────────────────────────────
-        // Phase 3.1: accumulate in memory — streaming token broadcast is M3.2.
+        // ── 3. Run RAG pipeline with token streaming ───────────────────────────
+        $messageId      = (string) $this->assistantMessage->id;
+        $conversationId = (string) $conversation->id;
+
         try {
             $reply = $pipeline->execute(
                 chatbot: $chatbot,
                 query:   $userMessage->content,
                 history: $history,
+                onToken: function (string $token) use ($conversationId, $messageId): void {
+                    broadcast(new MessageTokenStreamed(
+                        conversationId: $conversationId,
+                        messageId:      $messageId,
+                        token:          $token,
+                    ));
+                },
             );
         } catch (\Throwable $e) {
             Log::error('GenerateAiReplyJob: pipeline exception', [
@@ -104,8 +114,8 @@ class GenerateAiReplyJob implements ShouldQueue
             'latency_ms'  => $reply->latency_ms,
         ]);
 
-        // ── 5. Emit event (M3.2 will add a Reverb broadcast listener) ─────────
-        MessageGenerated::dispatch($this->assistantMessage->fresh());
+        // ── 5. Broadcast completion so the client can finalize the message ─────
+        broadcast(new MessageCompleted($this->assistantMessage->fresh()));
     }
 
     /**

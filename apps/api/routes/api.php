@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
 use App\Http\Controllers\Api\V1\Documents\DocumentsController;
+use App\Http\Controllers\Api\V1\Public\BroadcastingAuthController as PublicBroadcastingAuthController;
 use App\Http\Controllers\Api\V1\Public\ChatbotsController as PublicChatbotsController;
 use App\Http\Controllers\Api\V1\Public\ConversationsController as PublicConversationsController;
 use App\Http\Controllers\Api\V1\Public\MessagesController as PublicMessagesController;
@@ -79,6 +80,12 @@ Route::prefix('v1')->group(function () {
 
         // All mutating + polling endpoints require HMAC.
         Route::middleware('widget')->group(function () {
+            // Reverb presence channel auth for widget visitors.
+            Route::post(
+                'broadcasting/auth',
+                PublicBroadcastingAuthController::class,
+            )->name('public.broadcasting.auth');
+
             Route::post(
                 'conversations',
                 [PublicConversationsController::class, 'store'],
