@@ -5,7 +5,7 @@ chatbots on their own knowledge (documents, websites, FAQs) via RAG, then embed 
 a single `<script>` tag. Every answer is grounded in retrieved content — no hallucination, fully
 on-brand.
 
-**Status:** Phase 1 complete (auth, org management, chatbot CRUD). Phase 2 (AI/RAG) in progress.
+**Status:** Phase 1 complete (auth, org management, chatbot CRUD). Phase 2 complete (AI/RAG pipeline, document ingestion, URL crawling, knowledge base UI).
 
 ## Monorepo Structure
 
@@ -19,7 +19,11 @@ replyiq/
 │   ├── api-client/ Typed fetch client shared by web + widget
 │   └── config/     Shared Tailwind preset, tsconfig bases
 ├── docs/
-│   └── architecture/decisions/  Architecture Decision Records
+│   ├── architecture/decisions/  Architecture Decision Records (ADR-0001–0003)
+│   ├── rag-quality-notes.md     RAG quality findings and Phase 3 recommendations
+│   ├── performance-baseline.md  pgvector HNSW config and latency benchmarks
+│   ├── cost-model.md            OpenAI cost projections per tier
+│   └── deploy/
 └── turbo.json
 ```
 
@@ -48,10 +52,10 @@ php artisan migrate
 php artisan serve          # http://localhost:8000
 ```
 
-**Terminal 2 — Queue worker** (needed for email verification, password reset)
+**Terminal 2 — Queue worker** (needed for email verification, document ingestion, URL crawling)
 ```bash
 cd apps/api
-php artisan queue:listen --tries=1
+php artisan horizon          # or: php artisan queue:listen --tries=1
 ```
 
 **Terminal 3 — Next.js dev server**
@@ -71,7 +75,11 @@ pnpm --filter web dev      # http://localhost:3000
 | `DB_USERNAME` / `DB_PASSWORD` | `replyiq` / `secret` | |
 | `FRONTEND_URL` | `http://localhost:3000` | Used in email verification links |
 | `MAIL_MAILER` | `log` (dev) / `smtp` (prod) | |
-| `OPENAI_API_KEY` | `sk-...` | Phase 2 — leave empty for now |
+| `OPENAI_API_KEY` | `sk-...` | Required for Phase 2 AI features |
+| `AI_PROVIDER` | `openai` | LLM provider; only `openai` supported in Phase 2 |
+| `QUEUE_CONNECTION` | `redis` | Use `redis` with Horizon; `database` for local dev without Redis |
+| `REDIS_HOST` | `127.0.0.1` | Required when `QUEUE_CONNECTION=redis`; also used by Horizon & Reverb |
+| `REDIS_PORT` | `6379` | Default Redis port |
 
 ### `apps/web/.env.local` (required)
 

@@ -7,6 +7,7 @@ use App\DataObjects\RetrievedChunk;
 use App\Models\Chatbot;
 use App\Services\Ai\Contracts\LlmClient;
 use App\Services\Knowledge\RetrievalService;
+use Illuminate\Support\Facades\Log;
 
 class RagPipeline
 {
@@ -60,18 +61,34 @@ class RagPipeline
         $maxTokens   = $chatbot->settings?->max_tokens  ?? 800;
         $temperature = $chatbot->settings?->temperature ?? 0.3;
 
-        if ($onToken !== null) {
-            $content     = '';
-            $tokensUsed  = 0;
+        try {
+            if ($onToken !== null) {
+                $content    = '';
+                $tokensUsed = 0;
 
-            foreach ($this->llm->chatStream($messages, $model, $maxTokens, $temperature) as $delta) {
-                $content .= $delta;
-                ($onToken)($delta);
+                foreach ($this->llm->chatStream($messages, $model, $maxTokens, $temperature) as $delta) {
+                    $content .= $delta;
+                    ($onToken)($delta);
+                }
+            } else {
+                $llmResponse = $this->llm->chat($messages, $model, $maxTokens, $temperature);
+                $content     = $llmResponse->content;
+                $tokensUsed  = $llmResponse->tokens_used;
             }
-        } else {
-            $llmResponse = $this->llm->chat($messages, $model, $maxTokens, $temperature);
-            $content     = $llmResponse->content;
-            $tokensUsed  = $llmResponse->tokens_used;
+        } catch (\Throwable $e) {
+            Log::error('RagPipeline: LLM call failed', [
+                'chatbot_id' => $chatbot->id,
+                'model'      => $model,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return new GeneratedReply(
+                content:     "I'm sorry, I'm unable to respond right now. Please try again in a moment.",
+                confidence:  0.0,
+                sources:     [],
+                tokens_used: 0,
+                latency_ms:  (int) ((hrtime(true) - $start) / 1_000_000),
+            );
         }
 
         $confidence = (float) $chunks->max(fn (RetrievedChunk $c) => $c->similarity);
