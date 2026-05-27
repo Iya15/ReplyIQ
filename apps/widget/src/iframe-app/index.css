@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Runtime CSS custom properties set by App.tsx from chatbot branding.
+ * Tailwind's `text-primary` and `bg-primary` map to --color-primary.
+ */
+:root {
+  --color-primary: #4f46e5; /* default brand indigo — overridden at runtime */
+}
+
+/* Ensure the widget fills the iframe and has no default body margin. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}

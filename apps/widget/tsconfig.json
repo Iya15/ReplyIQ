@@ -1,0 +1,18 @@
+{
+  "extends": "@replyiq/config/tsconfig",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "src",
+    "*.ts",
+    "*.tsx",
+    "vite.config.loader.ts",
+    "vite.config.app.ts"
+  ],
+  "exclude": ["node_modules", "dist", "public"]
+}

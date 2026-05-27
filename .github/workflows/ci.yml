@@ -136,11 +136,34 @@ jobs:
 
 # ── widget ────────────────────────────────────────────────────────────────────
   widget:
-    name: Widget (placeholder)
+    name: Widget (type-check · build · size-limit)
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Placeholder
-        run: echo "Widget build — Phase 2"
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm --filter widget type-check
+
+      - name: Build (loader + app)
+        run: pnpm --filter widget build
+        env:
+          WIDGET_BASE:    https://cdn.replyiq.com/widget
+          WIDGET_API_URL: https://api.replyiq.com/api/v1
+
+      - name: Size limit check
+        run: pnpm --filter widget size-limit

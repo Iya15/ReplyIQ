@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Strict CSP for the widget iframe.
+      - script-src 'self'           no inline scripts or external CDN scripts
+      - style-src  'self' 'unsafe-inline'  Tailwind injects runtime styles
+      - connect-src                 only the ReplyIQ API + Reverb WebSocket
+      - img-src                     self + data URIs (avatars) + any https image
+      - font-src                    self + data URIs for embedded fonts
+      - frame-ancestors             NOT set here — must be set via response header
+                                    (meta CSP does not support frame-ancestors)
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'none';
+        script-src  'self';
+        style-src   'self' 'unsafe-inline';
+        img-src     'self' data: https:;
+        font-src    'self' data:;
+        connect-src 'self'
+                    https://api.replyiq.com
+                    wss://api.replyiq.com
+                    http://localhost:8000
+                    ws://localhost:8080;
+      "
+    />
+    <title>ReplyIQ Widget</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/iframe-app/main.tsx"></script>
+  </body>
+</html>
