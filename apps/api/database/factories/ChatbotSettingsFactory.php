@@ -39,7 +39,8 @@ class ChatbotSettingsFactory extends Factory
             'similarity_threshold' => 0.75,
             'retrieval_k' => 5,
             'fallback_message' => "I don't have information about that. Please contact our support team.",
-            'allowed_domains' => [],
+            'allowed_domains'  => [],
+            'widget_secret'    => bin2hex(random_bytes(32)),
         ];
     }
 }

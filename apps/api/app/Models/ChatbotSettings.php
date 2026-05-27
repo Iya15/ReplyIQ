@@ -41,6 +41,7 @@ class ChatbotSettings extends Model
         'retrieval_k',
         'fallback_message',
         'allowed_domains',
+        'widget_secret',
     ];
 
     protected function casts(): array

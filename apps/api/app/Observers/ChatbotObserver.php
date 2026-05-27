@@ -8,9 +8,10 @@ class ChatbotObserver
 {
     public function created(Chatbot $chatbot): void
     {
-        // All column defaults are defined in the migration; passing an empty
-        // array lets the DB supply them, keeping the observer free of magic
-        // defaults that could drift out of sync with the schema.
-        $chatbot->settings()->create([]);
+        // Most column defaults come from the migration.
+        // widget_secret has no DB default — it must be unique per chatbot.
+        $chatbot->settings()->create([
+            'widget_secret' => bin2hex(random_bytes(32)),
+        ]);
     }
 }

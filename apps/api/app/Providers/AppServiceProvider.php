@@ -54,6 +54,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
         });
+
+        // 60 requests/min per IP — applied to all public widget endpoints.
+        // Generous enough for active conversations (send + poll) while blocking bots.
+        RateLimiter::for('widget', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
+        });
     }
 
     private function configureEmailVerification(): void

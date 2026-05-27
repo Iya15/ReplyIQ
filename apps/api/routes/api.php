@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
 use App\Http\Controllers\Api\V1\Documents\DocumentsController;
+use App\Http\Controllers\Api\V1\Public\ChatbotsController as PublicChatbotsController;
+use App\Http\Controllers\Api\V1\Public\ConversationsController as PublicConversationsController;
+use App\Http\Controllers\Api\V1\Public\MessagesController as PublicMessagesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -61,5 +64,40 @@ Route::prefix('v1')->group(function () {
         Route::post('chatbots/{chatbot}/documents/url', [DocumentsController::class, 'storeUrl']);
         Route::delete('documents/{document}', [DocumentsController::class, 'destroy']);
         Route::post('documents/{document}/reprocess', [DocumentsController::class, 'reprocess']);
+    });
+
+    // ── Public (widget) API ───────────────────────────────────────────────────
+    // No user auth — protected by WidgetAuth (HMAC + Origin).
+    // 'throttle:widget' = 60 requests/minute per IP (defined in AppServiceProvider).
+    Route::prefix('public')->middleware('throttle:widget')->group(function () {
+
+        // Config: read-only branding, no HMAC needed.
+        Route::get(
+            'chatbots/{public_id}/config',
+            [PublicChatbotsController::class, 'config'],
+        )->middleware('widget:config')->name('public.chatbots.config');
+
+        // All mutating + polling endpoints require HMAC.
+        Route::middleware('widget')->group(function () {
+            Route::post(
+                'conversations',
+                [PublicConversationsController::class, 'store'],
+            )->name('public.conversations.store');
+
+            Route::post(
+                'conversations/{id}/messages',
+                [PublicConversationsController::class, 'sendMessage'],
+            )->name('public.conversations.messages.store');
+
+            Route::get(
+                'conversations/{id}/messages',
+                [PublicConversationsController::class, 'messages'],
+            )->name('public.conversations.messages.index');
+
+            Route::post(
+                'messages/{id}/feedback',
+                [PublicMessagesController::class, 'feedback'],
+            )->name('public.messages.feedback');
+        });
     });
 });
