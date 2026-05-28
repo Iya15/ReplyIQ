@@ -92,7 +92,9 @@ class ConversationsController extends Controller
 
         return $this->ok([
             'user_message'      => MessageResource::make($messages['user']),
-            'assistant_message' => MessageResource::make($messages['assistant']),
+            'assistant_message' => $messages['assistant']
+                ? MessageResource::make($messages['assistant'])
+                : null,
         ], $request, Response::HTTP_ACCEPTED);
     }
 

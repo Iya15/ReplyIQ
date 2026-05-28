@@ -21,7 +21,7 @@ export interface Source {
 
 export interface Message {
   id:         string;
-  role:       'user' | 'assistant';
+  role:       'user' | 'assistant' | 'agent';
   content:    string;
   status:     'pending' | 'complete';
   sources:    Source[];

@@ -31,13 +31,16 @@ class Conversation extends Model
         'country',
         'status',
         'resolved_at',
+        'agent_id',
+        'escalated_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'status'      => ConversationStatus::class,
-            'resolved_at' => 'datetime',
+            'status'       => ConversationStatus::class,
+            'resolved_at'  => 'datetime',
+            'escalated_at' => 'datetime',
         ];
     }
 
@@ -58,5 +61,10 @@ class Conversation extends Model
     public function latestMessage(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Message::class)->latestOfMany('created_at');
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'agent_id');
     }
 }

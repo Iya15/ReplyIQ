@@ -192,6 +192,9 @@ export interface Conversation {
   country:       string | null;
   status:        ConversationStatus;
   resolved_at:   string | null;
+  escalated_at:  string | null;
+  agent_id:      string | null;
+  agent_name:    string | null;
   created_at:    string;
   message_count?: number;
   last_message?:  ConversationLastMessage | null;
@@ -205,7 +208,7 @@ export interface MessageSource {
 
 export interface Message {
   id:         string;
-  role:       'user' | 'assistant';
+  role:       'user' | 'assistant' | 'agent';
   content:    string;
   status:     'pending' | 'complete';
   sources:    MessageSource[];

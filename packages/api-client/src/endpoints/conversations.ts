@@ -34,5 +34,13 @@ export function createConversationEndpoints(client: ApiClient) {
     // POST /conversations/{id}/resolve → { data: Conversation }
     resolve: (id: string) =>
       client.post<ApiResponse<Conversation>>(`/conversations/${id}/resolve`, {}),
+
+    // POST /conversations/{id}/takeover → { data: Conversation }
+    takeover: (id: string) =>
+      client.post<ApiResponse<Conversation>>(`/conversations/${id}/takeover`, {}),
+
+    // POST /conversations/{id}/agent-message → { data: Message }
+    agentMessage: (id: string, content: string) =>
+      client.post<ApiResponse<Message>>(`/conversations/${id}/agent-message`, { content }),
   };
 }

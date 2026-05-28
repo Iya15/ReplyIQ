@@ -2,6 +2,7 @@
 
 namespace App\Services\Public;
 
+use App\Enums\ConversationStatus;
 use App\Enums\MessageRole;
 use App\Enums\MessageStatus;
 use App\Jobs\GenerateAiReplyJob;
@@ -15,10 +16,13 @@ class SendMessageService
     public function __construct(private readonly AnalyticsRecorder $analytics) {}
 
     /**
-     * Persist the user's message, create a pending assistant placeholder,
-     * and dispatch the AI reply job.
+     * Persist the user's message, optionally create a pending assistant
+     * placeholder, and dispatch the AI reply job.
      *
-     * @return array{user: Message, assistant: Message}
+     * When the conversation is escalated (agent has taken over), no assistant
+     * placeholder is created — the human agent replies via the dashboard.
+     *
+     * @return array{user: Message, assistant: Message|null}
      */
     public function execute(Conversation $conversation, string $content): array
     {
@@ -30,6 +34,18 @@ class SendMessageService
             'content'         => $content,
             'status'          => MessageStatus::Complete,
         ]);
+
+        // When a human agent has taken over, don't create an AI placeholder.
+        if ($conversation->status === ConversationStatus::Escalated) {
+            $this->analytics->record(
+                eventType:      'message_sent',
+                organizationId: (string) $conversation->organization_id,
+                chatbotId:      (string) $conversation->chatbot_id,
+                conversationId: (string) $conversation->id,
+                context:        ['content_preview' => mb_substr($content, 0, 200)],
+            );
+            return ['user' => $userMessage, 'assistant' => null];
+        }
 
         // Create the assistant placeholder — status = 'pending' until the job finishes.
         $assistantMessage = Message::create([

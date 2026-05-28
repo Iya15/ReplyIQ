@@ -32,6 +32,42 @@ export function useConversation(id: string | null) {
   });
 }
 
+export function useTakeoverConversation(chatbotId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => conversationsApi.takeover(id),
+
+    onSuccess: (res, id) => {
+      queryClient.setQueriesData<{ data: Conversation[] }>(
+        { queryKey: ['conversations', chatbotId] },
+        (old) => old ? { ...old, data: old.data.map((c) => (c.id === id ? res.data : c)) } : old,
+      );
+      queryClient.setQueryData(conversationKey(id), res);
+      toast.success('You have taken over this conversation');
+    },
+
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to take over conversation');
+    },
+  });
+}
+
+export function useAgentMessage(conversationId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (content: string) => conversationsApi.agentMessage(conversationId, content),
+    onSuccess: () => {
+      // Refresh the message list
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to send message');
+    },
+  });
+}
+
 export function useResolveConversation(chatbotId: string) {
   const queryClient = useQueryClient();
 

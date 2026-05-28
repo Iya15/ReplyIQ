@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\V1\ApiKeys\ApiKeysController;
 use App\Http\Controllers\Api\V1\Billing\BillingController;
 use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Chatbots\AnalyticsController;
+use App\Http\Controllers\Api\V1\Conversations\HandoffController;
+use App\Http\Controllers\Api\V1\Public\HandoffController as PublicHandoffController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
 use App\Http\Controllers\Api\V1\Invitations\AcceptController as InvitationAcceptController;
@@ -108,6 +110,8 @@ Route::prefix('v1')->group(function () {
         Route::get('conversations/{conversation}', [ConversationsController::class, 'show']);
         Route::get('conversations/{conversation}/messages', [ConversationsController::class, 'messages']);
         Route::post('conversations/{conversation}/resolve', [ConversationsController::class, 'resolve']);
+        Route::post('conversations/{conversation}/takeover', [HandoffController::class, 'takeover']);
+        Route::post('conversations/{conversation}/agent-message', [HandoffController::class, 'agentMessage']);
 
         // ── Documents ─────────────────────────────────────────────────────────
         Route::get('chatbots/{chatbot}/documents', [DocumentsController::class, 'index']);
@@ -161,6 +165,11 @@ Route::prefix('v1')->group(function () {
                 'conversations/{id}/messages',
                 [PublicConversationsController::class, 'sendMessage'],
             )->middleware('throttle:widget-send')->name('public.conversations.messages.store');
+
+            Route::post(
+                'conversations/{id}/request-human',
+                [PublicHandoffController::class, 'requestHuman'],
+            )->name('public.conversations.request-human');
 
             Route::get(
                 'conversations/{id}/messages',

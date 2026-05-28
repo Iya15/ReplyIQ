@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle, ExternalLink, Globe, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { CheckCircle, ExternalLink, Globe, UserRound, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { useConversation, useResolveConversation } from '@/hooks/use-conversations';
+import { useConversation, useResolveConversation, useTakeoverConversation, useAgentMessage } from '@/hooks/use-conversations';
 import { useMessages } from '@/hooks/use-messages';
 import type { Message, MessageSource } from '@replyiq/api-client';
 
@@ -39,15 +40,23 @@ function MessageBubble({
   message: Message;
   onSourceClick: (source: MessageSource) => void;
 }) {
-  const isUser = message.role === 'user';
+  const isUser  = message.role === 'user';
+  const isAgent = message.role === 'agent';
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'items-end gap-2'} group`}>
       <div className={`flex flex-col gap-1 max-w-[78%] ${isUser ? 'items-end' : 'items-start'}`}>
+        {isAgent && (
+          <span className="px-1 text-[10px] text-muted-foreground flex items-center gap-1">
+            <UserRound className="h-2.5 w-2.5" /> Agent
+          </span>
+        )}
         <div
           className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl whitespace-pre-wrap break-words ${
             isUser
               ? 'bg-primary text-primary-foreground rounded-br-sm'
+              : isAgent
+              ? 'bg-blue-50 text-blue-900 dark:bg-blue-950/30 dark:text-blue-100 border border-blue-200 dark:border-blue-800 rounded-bl-sm'
               : 'bg-muted text-foreground rounded-bl-sm'
           }`}
         >
@@ -185,10 +194,14 @@ interface Props {
 
 export function ConversationDetail({ conversationId, chatbotId }: Props) {
   const [activeSource, setActiveSource] = useState<MessageSource | null>(null);
+  const [agentInput, setAgentInput]     = useState('');
+  const agentInputRef                   = useRef<HTMLInputElement>(null);
 
   const { data: convRes, isLoading: convLoading } = useConversation(conversationId);
   const { data: messages, isLoading: msgsLoading } = useMessages(conversationId);
-  const { mutate: resolve, isPending: resolving } = useResolveConversation(chatbotId);
+  const { mutate: resolve, isPending: resolving }   = useResolveConversation(chatbotId);
+  const { mutate: takeover, isPending: takingOver }  = useTakeoverConversation(chatbotId);
+  const { mutate: sendAgent, isPending: sendingAgent } = useAgentMessage(conversationId);
 
   const conversation = convRes?.data;
   const isLoading    = convLoading || msgsLoading;
@@ -221,6 +234,11 @@ export function ConversationDetail({ conversationId, chatbotId }: Props) {
               <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle className="h-3 w-3" /> Resolved
               </span>
+            ) : conversation.status === 'escalated' ? (
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <UserRound className="h-3 w-3" />
+                {conversation.agent_name ? `Agent: ${conversation.agent_name}` : 'Escalated'}
+              </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" /> Active
@@ -247,18 +265,30 @@ export function ConversationDetail({ conversationId, chatbotId }: Props) {
           </div>
         </div>
 
-        {conversation.status === 'active' && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => resolve(conversationId)}
-            disabled={resolving}
-            className="shrink-0"
-          >
-            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-            Mark resolved
-          </Button>
-        )}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {conversation.status === 'active' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => takeover(conversationId)}
+              disabled={takingOver}
+            >
+              <UserRound className="h-3.5 w-3.5 mr-1.5" />
+              {takingOver ? 'Taking over…' : 'Take over'}
+            </Button>
+          )}
+          {conversation.status === 'active' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => resolve(conversationId)}
+              disabled={resolving}
+            >
+              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+              Mark resolved
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -279,6 +309,33 @@ export function ConversationDetail({ conversationId, chatbotId }: Props) {
           );
         })}
       </div>
+
+      {/* Agent reply input — visible when conversation is escalated */}
+      {conversation.status === 'escalated' && (
+        <div className="border-t px-3 py-2.5 flex items-center gap-2 shrink-0 bg-blue-50/40 dark:bg-blue-950/10">
+          <Input
+            ref={agentInputRef}
+            placeholder="Reply as agent…"
+            value={agentInput}
+            onChange={(e) => setAgentInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && agentInput.trim()) {
+                e.preventDefault();
+                sendAgent(agentInput.trim(), { onSuccess: () => setAgentInput('') });
+              }
+            }}
+            disabled={sendingAgent}
+            className="flex-1 text-sm"
+          />
+          <Button
+            size="icon"
+            disabled={sendingAgent || !agentInput.trim()}
+            onClick={() => sendAgent(agentInput.trim(), { onSuccess: () => setAgentInput('') })}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Source side-panel */}
       <SourcePanel source={activeSource} onClose={() => setActiveSource(null)} />

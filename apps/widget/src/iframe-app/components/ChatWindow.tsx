@@ -14,8 +14,18 @@ function close() {
 }
 
 export default function ChatWindow({ config, session }: Props) {
-  const { messages, sendMessage, sendFeedback, isPending, isLoading, errorMessage } =
-    useConversation(session);
+  const {
+    messages,
+    sendMessage,
+    sendFeedback,
+    escalate,
+    isPending,
+    isLoading,
+    isEscalated,
+    agentName,
+    shouldSuggestEscalation,
+    errorMessage,
+  } = useConversation(session);
 
   return (
     <div
@@ -31,6 +41,48 @@ export default function ChatWindow({ config, session }: Props) {
         onFeedback={sendFeedback}
       />
 
+      {/* Agent joined banner */}
+      {isEscalated && (
+        <div
+          style={{
+            borderTop: '1px solid rgba(59,130,246,0.25)',
+            background: 'rgba(59,130,246,0.07)',
+            padding: '8px 16px',
+            textAlign: 'center',
+            fontSize: '12px',
+            color: '#2563eb',
+          }}
+          role="status"
+        >
+          {agentName
+            ? `${agentName} has joined the conversation`
+            : 'An agent has joined the conversation'}
+        </div>
+      )}
+
+      {/* Escalation suggestion (after consecutive AI failures) */}
+      {!isEscalated && shouldSuggestEscalation && session && (
+        <div
+          style={{
+            borderTop: '1px solid rgba(234,179,8,0.25)',
+            background: 'rgba(234,179,8,0.07)',
+            padding: '8px 16px',
+            textAlign: 'center',
+            fontSize: '12px',
+            color: '#b45309',
+          }}
+        >
+          Having trouble?{' '}
+          <button
+            onClick={escalate}
+            style={{ fontWeight: 600, textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', color: 'inherit', fontSize: 'inherit', padding: 0 }}
+          >
+            Talk to a person
+          </button>
+        </div>
+      )}
+
+      {/* Rate-limit / send error */}
       {errorMessage && (
         <div
           style={{
@@ -51,6 +103,8 @@ export default function ChatWindow({ config, session }: Props) {
         config={config}
         onSend={sendMessage}
         disabled={isPending || !session}
+        isEscalated={isEscalated}
+        {...(session !== null ? { onEscalate: () => { void escalate(); } } : {})}
       />
     </div>
   );

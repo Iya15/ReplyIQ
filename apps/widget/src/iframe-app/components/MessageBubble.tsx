@@ -21,7 +21,8 @@ function formatTime(iso: string): string {
 
 export default function MessageBubble({ message, onFeedback }: Props) {
   const [feedback, setFeedback] = useState<'helpful' | 'not_helpful' | null>(null);
-  const isUser = message.role === 'user';
+  const isUser  = message.role === 'user';
+  const isAgent = message.role === 'agent';
 
   const html = useMemo(() => {
     if (isUser) return '';
@@ -37,12 +38,17 @@ export default function MessageBubble({ message, onFeedback }: Props) {
   return (
     <div className={`group flex riq-msg-enter ${isUser ? 'justify-end' : 'items-end gap-2'}`}>
       <div className={`flex flex-col gap-1 max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
+        {isAgent && (
+          <span className="px-1 text-[10px] text-[var(--riq-text)] opacity-50">Agent</span>
+        )}
         {/* Bubble */}
         <div
           className={`
             relative px-3.5 py-2.5 text-sm leading-relaxed
             ${isUser
               ? 'bg-[var(--riq-primary)] text-white rounded-[var(--riq-radius)] rounded-br-[3px]'
+              : isAgent
+              ? 'bg-blue-50 text-blue-900 rounded-[var(--riq-radius)] rounded-bl-[3px] border border-blue-200'
               : 'bg-[var(--riq-surface)] text-[var(--riq-text)] rounded-[var(--riq-radius)] rounded-bl-[3px]'}
           `}
         >

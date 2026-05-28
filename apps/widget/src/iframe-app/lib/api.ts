@@ -31,7 +31,7 @@ export async function sendMessage(
   convId: string,
   token: string,
   content: string,
-): Promise<{ user_message: Message; assistant_message: Message }> {
+): Promise<{ user_message: Message; assistant_message: Message | null }> {
   const res = await fetch(`${BASE}/public/conversations/${convId}/messages`, {
     method:  'POST',
     headers: authHeaders(token),
@@ -42,7 +42,14 @@ export async function sendMessage(
     throw new RateLimitError(retryAfter);
   }
   if (!res.ok) throw new Error(`send failed: ${res.status}`);
-  return ((await res.json()) as { data: { user_message: Message; assistant_message: Message } }).data;
+  return ((await res.json()) as { data: { user_message: Message; assistant_message: Message | null } }).data;
+}
+
+export async function requestHuman(convId: string, token: string): Promise<void> {
+  await fetch(`${BASE}/public/conversations/${convId}/request-human`, {
+    method:  'POST',
+    headers: authHeaders(token),
+  });
 }
 
 export async function sendFeedback(

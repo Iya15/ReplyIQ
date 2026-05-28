@@ -2,21 +2,23 @@ import { useCallback, useRef, useState } from 'react';
 import type { ChatbotConfig } from '../lib/types';
 
 interface Props {
-  config:   ChatbotConfig;
-  onSend:   (content: string) => void;
-  disabled: boolean;
+  config:       ChatbotConfig;
+  onSend:       (content: string) => void;
+  disabled:     boolean;
+  isEscalated?: boolean;
+  onEscalate?:  () => void;
 }
 
 const MAX_CHARS     = 4000;
 const WARN_AT_CHARS = 3600;
-const LINE_HEIGHT   = 22; // px per line
+const LINE_HEIGHT   = 22;
 const MAX_LINES     = 5;
 
-export default function MessageInput({ config, onSend, disabled }: Props) {
-  const [value, setValue]       = useState('');
-  const textareaRef             = useRef<HTMLTextAreaElement>(null);
-  const remaining               = MAX_CHARS - value.length;
-  const showCounter             = value.length >= WARN_AT_CHARS;
+export default function MessageInput({ config, onSend, disabled, isEscalated, onEscalate }: Props) {
+  const [value, setValue]  = useState('');
+  const textareaRef        = useRef<HTMLTextAreaElement>(null);
+  const remaining          = MAX_CHARS - value.length;
+  const showCounter        = value.length >= WARN_AT_CHARS;
 
   const resize = useCallback(() => {
     const ta = textareaRef.current;
@@ -36,16 +38,11 @@ export default function MessageInput({ config, onSend, disabled }: Props) {
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setValue('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      submit();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
   }
 
   return (
@@ -56,7 +53,7 @@ export default function MessageInput({ config, onSend, disabled }: Props) {
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={config.placeholder_text}
+          placeholder={isEscalated ? 'Message the agent…' : config.placeholder_text}
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none rounded-xl border border-[var(--riq-border)]
@@ -83,7 +80,7 @@ export default function MessageInput({ config, onSend, disabled }: Props) {
         </button>
       </div>
 
-      {/* Counter + branding row */}
+      {/* Counter + "Talk to a person" + branding */}
       <div className="flex items-center justify-between px-3 pb-2">
         <span
           className={`text-[10px] transition-opacity ${
@@ -93,16 +90,26 @@ export default function MessageInput({ config, onSend, disabled }: Props) {
           {remaining} left
         </span>
 
-        {config.show_branding && (
-          <a
-            href="https://replyiq.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] text-[var(--riq-text)] opacity-30 hover:opacity-60 transition-opacity"
-          >
-            Powered by ReplyIQ
-          </a>
-        )}
+        <div className="flex items-center gap-3">
+          {!isEscalated && onEscalate && (
+            <button
+              onClick={onEscalate}
+              className="text-[10px] text-[var(--riq-text)] opacity-40 hover:opacity-80 transition-opacity underline"
+            >
+              Talk to a person
+            </button>
+          )}
+          {config.show_branding && (
+            <a
+              href="https://replyiq.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-[var(--riq-text)] opacity-30 hover:opacity-60 transition-opacity"
+            >
+              Powered by ReplyIQ
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );

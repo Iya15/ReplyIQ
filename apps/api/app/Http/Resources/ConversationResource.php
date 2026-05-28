@@ -21,6 +21,9 @@ class ConversationResource extends JsonResource
             'country'      => $conv->country,
             'status'       => $conv->status->value,
             'resolved_at'  => $conv->resolved_at,
+            'escalated_at' => $conv->escalated_at,
+            'agent_id'     => $conv->agent_id,
+            'agent_name'   => $this->whenLoaded('agent', fn () => $conv->agent?->name),
             'created_at'   => $conv->created_at,
             'message_count' => $this->whenCounted('messages'),
             'last_message' => $this->whenLoaded('latestMessage', function () use ($conv) {

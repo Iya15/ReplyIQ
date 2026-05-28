@@ -44,6 +44,12 @@ class GenerateAiReplyJob implements ShouldQueue
         $chatbot      = $conversation->chatbot;
         app()->instance('currentOrganization', $chatbot->organization);
 
+        // ── 1b. Guard: skip if an agent has taken over since this job was queued.
+        if ($conversation->status === \App\Enums\ConversationStatus::Escalated) {
+            $this->assistantMessage->delete();
+            return;
+        }
+
         // ── 2. Build query and history ─────────────────────────────────────────
         // Load all complete messages for this conversation ordered by creation.
         $allMessages = Message::where('conversation_id', $conversation->id)
