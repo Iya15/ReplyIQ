@@ -43,5 +43,15 @@ export default defineConfig({
     __WIDGET_API_URL__: JSON.stringify(
       process.env['WIDGET_API_URL'] ?? 'https://api.replyiq.com/api/v1',
     ),
+    __REVERB_APP_KEY__: JSON.stringify(
+      process.env['REVERB_APP_KEY'] ?? 'replyiq',
+    ),
+    __REVERB_HOST__: JSON.stringify(
+      process.env['REVERB_HOST'] ?? 'ws.replyiq.com',
+    ),
+    __REVERB_PORT__: Number(process.env['REVERB_PORT'] ?? 443),
+    __REVERB_SCHEME__: JSON.stringify(
+      process.env['REVERB_SCHEME'] ?? 'wss',
+    ),
   },
 });
