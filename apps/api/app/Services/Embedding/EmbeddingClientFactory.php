@@ -8,7 +8,7 @@ class EmbeddingClientFactory
 {
     public static function resolve(Application $app): EmbeddingClient
     {
-        if (env('AI_PROVIDER') === 'ollama') {
+        if (config('services.ai.provider') === 'ollama') {
             return new OllamaEmbeddingClient(
                 (string) config('services.ollama.host', 'http://localhost:11434'),
             );

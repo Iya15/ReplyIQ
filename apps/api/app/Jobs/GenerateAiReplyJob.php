@@ -18,8 +18,6 @@ class GenerateAiReplyJob implements ShouldQueue
 {
     use Queueable;
 
-    /** Separate queue from ingestion so long crawls don't delay chat replies. */
-    public ?string $queue = 'replies';
 
     /** Reply must arrive within 60 s or it's meaningless to the visitor. */
     public int $timeout = 60;
@@ -33,7 +31,9 @@ class GenerateAiReplyJob implements ShouldQueue
     public function __construct(
         public readonly Conversation $conversation,
         public readonly Message      $assistantMessage,
-    ) {}
+    ) {
+        $this->onQueue('replies');
+    }
 
     public function handle(RagPipeline $pipeline, AnalyticsRecorder $analytics): void
     {

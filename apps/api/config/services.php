@@ -39,4 +39,12 @@ return [
         'host' => env('OLLAMA_HOST', 'http://localhost:11434'),
     ],
 
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'openai'),
+    ],
+
+    'slack' => [
+        'escalation_webhook_url' => env('SLACK_ESCALATION_WEBHOOK_URL'),
+    ],
+
 ];

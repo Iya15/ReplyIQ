@@ -20,8 +20,6 @@ class CrawlWebsiteJob implements ShouldQueue
 {
     use Queueable;
 
-    public string $queue = 'ingestion';
-
     public int $timeout = 900; // 15 min — crawling is slow
 
     public int $tries = 2;
@@ -34,7 +32,10 @@ class CrawlWebsiteJob implements ShouldQueue
 
     private const MAX_TOTAL_CHARS = 5_000_000; // 5 MB
 
-    public function __construct(public readonly Document $document) {}
+    public function __construct(public readonly Document $document)
+    {
+        $this->onQueue('ingestion');
+    }
 
     public function handle(
         WebsiteCrawler $crawler,

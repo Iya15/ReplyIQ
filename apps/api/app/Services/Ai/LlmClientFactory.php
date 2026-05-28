@@ -9,7 +9,7 @@ class LlmClientFactory
 {
     public static function resolve(Application $app): LlmClient
     {
-        if (env('AI_PROVIDER') === 'ollama') {
+        if (config('services.ai.provider') === 'ollama') {
             return new OllamaLlmClient();
         }
 

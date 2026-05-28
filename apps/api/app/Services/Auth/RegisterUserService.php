@@ -8,11 +8,30 @@ use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class RegisterUserService
 {
+    public function __construct(private readonly PasswordBreachChecker $breachChecker) {}
+
     public function execute(array $data): User
     {
+        // Email enumeration defence: the error message does not confirm whether
+        // the email is already registered. An attacker cannot distinguish a
+        // "taken" email from a "try something else" prompt.
+        if (User::where('email', $data['email'])->exists()) {
+            throw ValidationException::withMessages([
+                'email' => ['Unable to register. Please try a different email or sign in to an existing account.'],
+            ]);
+        }
+
+        // HIBP password breach check (fail-open — network errors don't block).
+        if ($this->breachChecker->isBreached($data['password'])) {
+            throw ValidationException::withMessages([
+                'password' => ['This password has appeared in a data breach. Please choose a different password.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($data) {
             $user = User::create([
                 'name' => $data['name'],

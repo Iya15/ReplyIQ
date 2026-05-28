@@ -23,8 +23,6 @@ class ProcessDocumentJob implements ShouldQueue
 {
     use Queueable;
 
-    public string $queue = 'ingestion';
-
     public int $timeout = 600;
 
     public int $tries = 3;
@@ -36,7 +34,10 @@ class ProcessDocumentJob implements ShouldQueue
 
     private const TOKEN_RATIO = 1.3;
 
-    public function __construct(public readonly Document $document) {}
+    public function __construct(public readonly Document $document)
+    {
+        $this->onQueue('ingestion');
+    }
 
     public function handle(
         EmbeddingClient $embedder,

@@ -3,6 +3,7 @@
 use App\Http\Middleware\ApiKeyAuth;
 use App\Http\Middleware\EnforcePlanLimit;
 use App\Http\Middleware\ResolveTenant;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\WidgetAuth;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(SecurityHeaders::class);
         $middleware->alias([
             'tenant'     => ResolveTenant::class,
             'widget'     => WidgetAuth::class,
