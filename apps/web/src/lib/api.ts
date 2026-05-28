@@ -1,6 +1,7 @@
 import {
   createAnalyticsEndpoints,
   createApiClient,
+  createApiKeyEndpoints,
   createAuthEndpoints,
   createChatbotEndpoints,
   createConversationEndpoints,
@@ -32,5 +33,6 @@ export const documentsApi     = createDocumentEndpoints(client);
 export const conversationsApi = createConversationEndpoints(client);
 export const analyticsApi     = createAnalyticsEndpoints(client);
 export const teamApi          = createTeamEndpoints(client);
+export const apiKeysApi       = createApiKeyEndpoints(client);
 
 export { ApiError } from '@replyiq/api-client';

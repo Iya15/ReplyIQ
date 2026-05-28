@@ -324,6 +324,21 @@ export interface AcceptInvitationPayload {
   password?: string;
 }
 
+// ── API Keys ──────────────────────────────────────────────────────────────────
+
+export interface ApiKey {
+  id:           string;
+  name:         string;
+  prefix:       string;       // first 12 chars, e.g. "rk_live_XXXX"
+  last_used_at: string | null;
+  created_at:   string;
+  key?:         string;       // present only on creation response — never again
+}
+
+export interface StoreApiKeyPayload {
+  name: string;
+}
+
 export interface StoreDocumentTextPayload {
   title: string;
   content: string;

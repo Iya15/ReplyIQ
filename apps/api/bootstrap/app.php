@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApiKeyAuth;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\WidgetAuth;
 use Illuminate\Console\Scheduling\Schedule;
@@ -17,8 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'tenant' => ResolveTenant::class,
-            'widget' => WidgetAuth::class,
+            'tenant'  => ResolveTenant::class,
+            'widget'  => WidgetAuth::class,
+            'api-key' => ApiKeyAuth::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

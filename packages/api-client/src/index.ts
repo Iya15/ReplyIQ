@@ -43,6 +43,8 @@ export type {
   InviteMemberPayload,
   InvitationPreview,
   AcceptInvitationPayload,
+  ApiKey,
+  StoreApiKeyPayload,
 } from './types';
 
 // ApiError is a class — runtime value, importable without `type`
@@ -59,3 +61,4 @@ export { createDocumentEndpoints } from './endpoints/documents';
 export { createConversationEndpoints } from './endpoints/conversations';
 export { createAnalyticsEndpoints } from './endpoints/analytics';
 export { createTeamEndpoints } from './endpoints/team';
+export { createApiKeyEndpoints } from './endpoints/api-keys';

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\ApiKeys\ApiKeysController;
 use App\Http\Controllers\Api\V1\Chatbots\AnalyticsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
@@ -68,6 +69,9 @@ Route::prefix('v1')->group(function () {
         Route::get('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'show']);
         Route::patch('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'update']);
 
+        // ── API Keys ──────────────────────────────────────────────────────────
+        Route::apiResource('api-keys', ApiKeysController::class)->only(['index', 'store', 'destroy']);
+
         // ── Team ──────────────────────────────────────────────────────────────
         Route::prefix('organizations/current')->group(function () {
             Route::get('members',                        [OrgMembersController::class, 'index']);
@@ -97,6 +101,12 @@ Route::prefix('v1')->group(function () {
         Route::post('chatbots/{chatbot}/documents/url', [DocumentsController::class, 'storeUrl']);
         Route::delete('documents/{document}', [DocumentsController::class, 'destroy']);
         Route::post('documents/{document}/reprocess', [DocumentsController::class, 'reprocess']);
+    });
+
+    // ── External API (API-key authenticated) ─────────────────────────────────
+    // Endpoints for programmatic access will be added here in a future milestone.
+    Route::prefix('external')->middleware('api-key')->group(function () {
+        // placeholder — no external endpoints yet
     });
 
     // ── Public (widget) API ───────────────────────────────────────────────────
