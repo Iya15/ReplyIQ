@@ -245,6 +245,47 @@ export interface DocumentFilters {
   status?: DocumentStatus;
 }
 
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+export type AnalyticsRange = '7d' | '30d' | '90d' | 'custom';
+
+export interface AnalyticsFilters {
+  range?: AnalyticsRange;
+  from?:  string; // ISO date — only for range='custom'
+  to?:    string;
+}
+
+export interface AnalyticsFunnel {
+  widget_opens:          number;
+  conversations_started: number;
+  messages_sent:         number;
+  resolved:              number;
+}
+
+export interface AnalyticsOverview {
+  total_conversations: number;
+  total_messages:      number;
+  avg_latency_ms:      number | null;
+  avg_confidence:      number | null;
+  unanswered_rate:     number;
+  funnel:              AnalyticsFunnel;
+}
+
+export interface ConversationDataPoint {
+  date:  string; // YYYY-MM-DD
+  count: number;
+}
+
+export interface TopicCount {
+  topic: string;
+  count: number;
+}
+
+export interface UnansweredQuestion {
+  content_preview: string;
+  count:           number;
+}
+
 export interface StoreDocumentTextPayload {
   title: string;
   content: string;

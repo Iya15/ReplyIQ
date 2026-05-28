@@ -37,11 +37,19 @@ vi.mock('@/lib/echo', () => ({
   destroyEcho: vi.fn(),
 }));
 
+vi.mock('@/hooks/use-analytics', () => ({
+  useAnalyticsOverview:      () => ({ data: undefined, isLoading: false }),
+  useAnalyticsConversations: () => ({ data: undefined, isLoading: false }),
+  useAnalyticsTopics:        () => ({ data: undefined, isLoading: false }),
+  useAnalyticsUnanswered:    () => ({ data: undefined, isLoading: false }),
+}));
+
 vi.mock('@/hooks/use-documents', () => ({
   useDocuments: () => ({ data: undefined, isLoading: false }),
-  useUploadDocument: () => ({ mutateAsync: vi.fn(), isPending: false, progress: 0, reset: vi.fn() }),
+  useUploadDocument:  () => ({ mutateAsync: vi.fn(), isPending: false, progress: 0, reset: vi.fn() }),
   useAddTextDocument: () => ({ mutateAsync: vi.fn(), isPending: false, reset: vi.fn() }),
-  useDeleteDocument: () => ({ mutate: vi.fn(), isPending: false }),
+  useAddUrlDocument:  () => ({ mutateAsync: vi.fn(), isPending: false, reset: vi.fn() }),
+  useDeleteDocument:  () => ({ mutate: vi.fn(), isPending: false }),
   useReprocessDocument: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
@@ -112,8 +120,14 @@ describe('ConversationsPage', () => {
 });
 
 describe('AnalyticsPage', () => {
-  it('renders the analytics heading', () => {
-    renderWithProviders(<AnalyticsPage />);
+  it('renders the analytics heading', async () => {
+    await act(async () => {
+      renderWithProviders(
+        <Suspense fallback={null}>
+          <AnalyticsPage params={Promise.resolve({ id: 'test-chatbot-id' })} />
+        </Suspense>,
+      );
+    });
     expect(screen.getByRole('heading', { name: /analytics/i })).toBeInTheDocument();
   });
 });

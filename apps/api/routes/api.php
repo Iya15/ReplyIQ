@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Chatbots\AnalyticsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
 use App\Http\Controllers\Api\V1\Conversations\ConversationsController;
@@ -59,6 +60,12 @@ Route::prefix('v1')->group(function () {
         Route::get('chatbots/{chatbot}/embed-code', [ChatbotsController::class, 'embedCode']);
         Route::get('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'show']);
         Route::patch('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'update']);
+
+        // ── Analytics ─────────────────────────────────────────────────────────
+        Route::get('chatbots/{chatbot}/analytics/overview',     [AnalyticsController::class, 'overview']);
+        Route::get('chatbots/{chatbot}/analytics/conversations', [AnalyticsController::class, 'conversations']);
+        Route::get('chatbots/{chatbot}/analytics/topics',       [AnalyticsController::class, 'topics']);
+        Route::get('chatbots/{chatbot}/analytics/unanswered',   [AnalyticsController::class, 'unanswered']);
 
         // ── Conversations ──────────────────────────────────────────────────────
         Route::get('chatbots/{chatbot}/conversations', [ConversationsController::class, 'index']);

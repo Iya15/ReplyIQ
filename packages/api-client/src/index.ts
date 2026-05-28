@@ -31,6 +31,13 @@ export type {
   MessageSource,
   Message,
   ConversationFilters,
+  AnalyticsRange,
+  AnalyticsFilters,
+  AnalyticsFunnel,
+  AnalyticsOverview,
+  ConversationDataPoint,
+  TopicCount,
+  UnansweredQuestion,
 } from './types';
 
 // ApiError is a class — runtime value, importable without `type`
@@ -45,3 +52,4 @@ export { createAuthEndpoints } from './endpoints/auth';
 export { createChatbotEndpoints } from './endpoints/chatbots';
 export { createDocumentEndpoints } from './endpoints/documents';
 export { createConversationEndpoints } from './endpoints/conversations';
+export { createAnalyticsEndpoints } from './endpoints/analytics';
