@@ -5,6 +5,8 @@ namespace App\Services\Auth;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
+use App\Notifications\WelcomeNotification;
+use App\Services\Onboarding\OnboardingService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterUserService
 {
-    public function __construct(private readonly PasswordBreachChecker $breachChecker) {}
+    public function __construct(
+        private readonly PasswordBreachChecker $breachChecker,
+        private readonly OnboardingService     $onboarding,
+    ) {}
 
     public function execute(array $data): User
     {
@@ -54,6 +59,18 @@ class RegisterUserService
             ]);
 
             event(new Registered($user));
+
+            // Seed sample chatbot so the user has something to explore immediately.
+            try {
+                $this->onboarding->seedForNewOrganization($org, $user);
+            } catch (\Throwable) {
+                // Onboarding failure must never break registration.
+            }
+
+            // Send welcome email (fail-open).
+            try {
+                $user->notify(new WelcomeNotification($user));
+            } catch (\Throwable) {}
 
             return $user;
         });

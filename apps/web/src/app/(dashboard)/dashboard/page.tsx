@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/lib/auth/auth-store';
+import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
 
 const STAT_CARDS = [
   { label: 'Total Chatbots' },
@@ -35,6 +36,9 @@ export default function DashboardPage() {
           Here&apos;s what&apos;s happening with your chatbots.
         </p>
       </div>
+
+      {/* Onboarding checklist — dismissible, shown to new users */}
+      <OnboardingChecklist />
 
       {/* Stat cards — skeleton until real data arrives in a later milestone */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

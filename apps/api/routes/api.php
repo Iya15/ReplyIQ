@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\ApiKeys\ApiKeysController;
+use App\Http\Controllers\Api\V1\Gdpr\DataDeletionController;
 use App\Http\Controllers\Api\V1\Billing\BillingController;
 use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Chatbots\AnalyticsController;
@@ -64,6 +65,11 @@ Route::prefix('v1')->group(function () {
             Route::get('me', [AuthController::class, 'me']);
         });
     });
+
+    // ── GDPR (public — no auth required) ─────────────────────────────────────
+    Route::post('gdpr/data-deletion', [DataDeletionController::class, 'store'])
+        ->middleware('throttle:auth')
+        ->name('gdpr.data-deletion');
 
     // ── Team management (invitation accept — no auth required) ────────────────
     Route::get('invitations/{token}',        [InvitationAcceptController::class, 'show']);
