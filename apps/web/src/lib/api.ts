@@ -5,6 +5,7 @@ import {
   createChatbotEndpoints,
   createConversationEndpoints,
   createDocumentEndpoints,
+  createTeamEndpoints,
 } from '@replyiq/api-client';
 import { useAuthStore } from './auth/auth-store';
 
@@ -30,5 +31,6 @@ export const chatbotsApi      = createChatbotEndpoints(client);
 export const documentsApi     = createDocumentEndpoints(client);
 export const conversationsApi = createConversationEndpoints(client);
 export const analyticsApi     = createAnalyticsEndpoints(client);
+export const teamApi          = createTeamEndpoints(client);
 
 export { ApiError } from '@replyiq/api-client';

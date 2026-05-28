@@ -286,6 +286,44 @@ export interface UnansweredQuestion {
   count:           number;
 }
 
+// ── Team management ───────────────────────────────────────────────────────────
+
+export interface Member {
+  id:         string;
+  name:       string;
+  email:      string;
+  avatar_url: string | null;
+  role:       MembershipRole;
+  joined_at:  string | null; // ISO 8601
+}
+
+export interface PendingInvitation {
+  id:          string;
+  email:       string;
+  role:        MembershipRole;
+  expires_at:  string;
+  created_at:  string;
+  invited_by?: { id: string; name: string; email: string; avatar_url: string | null } | null;
+}
+
+export interface InviteMemberPayload {
+  email: string;
+  role:  MembershipRole;
+}
+
+export interface InvitationPreview {
+  email:             string;
+  role:              MembershipRole;
+  organization_name: string;
+  invited_by:        string | null;
+  expires_at:        string;
+}
+
+export interface AcceptInvitationPayload {
+  name?:     string;
+  password?: string;
+}
+
 export interface StoreDocumentTextPayload {
   title: string;
   content: string;

@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Chatbots\AnalyticsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
+use App\Http\Controllers\Api\V1\Invitations\AcceptController as InvitationAcceptController;
+use App\Http\Controllers\Api\V1\Organization\InvitationsController as OrgInvitationsController;
+use App\Http\Controllers\Api\V1\Organization\MembersController as OrgMembersController;
 use App\Http\Controllers\Api\V1\Conversations\ConversationsController;
 use App\Http\Controllers\Api\V1\Documents\DocumentsController;
 use App\Http\Controllers\Api\V1\Public\BroadcastingAuthController as PublicBroadcastingAuthController;
@@ -54,12 +57,26 @@ Route::prefix('v1')->group(function () {
         });
     });
 
+    // ── Team management (invitation accept — no auth required) ────────────────
+    Route::get('invitations/{token}',        [InvitationAcceptController::class, 'show']);
+    Route::post('invitations/{token}/accept', [InvitationAcceptController::class, 'store']);
+
     // ── Chatbots ──────────────────────────────────────────────────────────────
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::apiResource('chatbots', ChatbotsController::class);
         Route::get('chatbots/{chatbot}/embed-code', [ChatbotsController::class, 'embedCode']);
         Route::get('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'show']);
         Route::patch('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'update']);
+
+        // ── Team ──────────────────────────────────────────────────────────────
+        Route::prefix('organizations/current')->group(function () {
+            Route::get('members',                        [OrgMembersController::class, 'index']);
+            Route::patch('members/{user_id}',            [OrgMembersController::class, 'update']);
+            Route::delete('members/{user_id}',           [OrgMembersController::class, 'destroy']);
+            Route::get('invitations',                    [OrgInvitationsController::class, 'index']);
+            Route::post('invitations',                   [OrgInvitationsController::class, 'store']);
+            Route::delete('invitations/{invitation_id}', [OrgInvitationsController::class, 'destroy']);
+        });
 
         // ── Analytics ─────────────────────────────────────────────────────────
         Route::get('chatbots/{chatbot}/analytics/overview',     [AnalyticsController::class, 'overview']);

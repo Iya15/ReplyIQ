@@ -25,8 +25,9 @@ class Invitation extends Model
     protected function casts(): array
     {
         return [
-            'expires_at' => 'datetime',
+            'expires_at'  => 'datetime',
             'accepted_at' => 'datetime',
+            'created_at'  => 'datetime',
         ];
     }
 

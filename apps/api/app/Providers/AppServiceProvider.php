@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\Chatbot;
 use App\Models\Document;
+use App\Models\Organization;
 use App\Policies\ChatbotPolicy;
 use App\Policies\DocumentPolicy;
+use App\Policies\OrganizationPolicy;
 use App\Services\Ai\Contracts\LlmClient;
 use App\Services\Ai\LlmClientFactory;
 use App\Services\Embedding\EmbeddingClient;
@@ -50,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Chatbot::class, ChatbotPolicy::class);
         Gate::policy(Document::class, DocumentPolicy::class);
         Gate::policy(Conversation::class, ConversationPolicy::class);
+        Gate::policy(Organization::class, OrganizationPolicy::class);
     }
 
     private function configureRateLimiters(): void
