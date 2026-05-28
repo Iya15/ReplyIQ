@@ -9,6 +9,7 @@ use App\Events\MessageTokenStreamed;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\Ai\RagPipeline;
+use App\Services\Analytics\AnalyticsRecorder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +35,7 @@ class GenerateAiReplyJob implements ShouldQueue
         public readonly Message      $assistantMessage,
     ) {}
 
-    public function handle(RagPipeline $pipeline): void
+    public function handle(RagPipeline $pipeline, AnalyticsRecorder $analytics): void
     {
         // ── 1. Resolve tenant context ──────────────────────────────────────────
         // BelongsToTenant uses 'currentOrganization' container binding.
@@ -60,6 +61,13 @@ class GenerateAiReplyJob implements ShouldQueue
                 'conversation_id' => $conversation->id,
             ]);
             $this->markFailed("I'm sorry, something went wrong. Please try again.");
+            $analytics->record(
+                eventType:      'unanswered',
+                organizationId: (string) $conversation->organization_id,
+                chatbotId:      (string) $chatbot->id,
+                conversationId: (string) $conversation->id,
+                context:        ['reason' => 'no_user_message'],
+            );
             return;
         }
 
@@ -114,6 +122,18 @@ class GenerateAiReplyJob implements ShouldQueue
             'latency_ms'  => $reply->latency_ms,
         ]);
 
+        $analytics->record(
+            eventType:      'message_replied',
+            organizationId: (string) $conversation->organization_id,
+            chatbotId:      (string) $chatbot->id,
+            conversationId: (string) $conversation->id,
+            context: [
+                'confidence'  => $reply->confidence,
+                'tokens_used' => $reply->tokens_used,
+                'latency_ms'  => $reply->latency_ms,
+            ],
+        );
+
         // ── 5. Broadcast completion so the client can finalize the message ─────
         broadcast(new MessageCompleted($this->assistantMessage->fresh()));
     }
@@ -148,5 +168,13 @@ class GenerateAiReplyJob implements ShouldQueue
         if ($fresh->status === MessageStatus::Pending) {
             $this->markFailed("I'm sorry, I'm unable to respond right now. Please try again.");
         }
+
+        app(AnalyticsRecorder::class)->record(
+            eventType:      'unanswered',
+            organizationId: (string) $this->conversation->organization_id,
+            chatbotId:      (string) $this->conversation->chatbot_id,
+            conversationId: (string) $this->conversation->id,
+            context:        ['reason' => 'retries_exhausted', 'error' => $e->getMessage()],
+        );
     }
 }

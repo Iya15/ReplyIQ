@@ -7,9 +7,12 @@ use App\Enums\MessageStatus;
 use App\Jobs\GenerateAiReplyJob;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\Analytics\AnalyticsRecorder;
 
 class SendMessageService
 {
+    public function __construct(private readonly AnalyticsRecorder $analytics) {}
+
     /**
      * Persist the user's message, create a pending assistant placeholder,
      * and dispatch the AI reply job.
@@ -38,6 +41,16 @@ class SendMessageService
 
         // Dispatch the AI reply job to the 'replies' queue.
         GenerateAiReplyJob::dispatch($conversation, $assistantMessage);
+
+        $this->analytics->record(
+            eventType:      'message_sent',
+            organizationId: (string) $conversation->organization_id,
+            chatbotId:      (string) $conversation->chatbot_id,
+            conversationId: (string) $conversation->id,
+            context: [
+                'content_preview' => mb_substr($content, 0, 200),
+            ],
+        );
 
         return [
             'user'      => $userMessage,

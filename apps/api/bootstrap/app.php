@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\WidgetAuth;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => ResolveTenant::class,
             'widget' => WidgetAuth::class,
         ]);
+    })
+    ->withSchedule(function (Schedule $schedule) {
+        $schedule->command('analytics:flush')->everyMinute()->withoutOverlapping();
+        $schedule->command('analytics:views:refresh')->everyThirtyMinutes()->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

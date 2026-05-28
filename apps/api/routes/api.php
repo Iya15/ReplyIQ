@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Documents\DocumentsController;
 use App\Http\Controllers\Api\V1\Public\BroadcastingAuthController as PublicBroadcastingAuthController;
 use App\Http\Controllers\Api\V1\Public\ChatbotsController as PublicChatbotsController;
 use App\Http\Controllers\Api\V1\Public\ConversationsController as PublicConversationsController;
+use App\Http\Controllers\Api\V1\Public\EventsController as PublicEventsController;
 use App\Http\Controllers\Api\V1\Public\MessagesController as PublicMessagesController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,6 +94,12 @@ Route::prefix('v1')->group(function () {
             'conversations',
             [PublicConversationsController::class, 'store'],
         )->middleware('widget:config')->name('public.conversations.store');
+
+        // Widget lifecycle events (widget_opened, widget_closed) — origin check only.
+        Route::post(
+            'events',
+            [PublicEventsController::class, 'store'],
+        )->middleware('widget:config')->name('public.events.store');
 
         // Session-token protected endpoints.
         Route::middleware('widget:token')->group(function () {

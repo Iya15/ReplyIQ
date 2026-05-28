@@ -5,9 +5,12 @@ namespace App\Services\Public;
 use App\Events\ConversationStarted;
 use App\Models\Chatbot;
 use App\Models\Conversation;
+use App\Services\Analytics\AnalyticsRecorder;
 
 class StartConversationService
 {
+    public function __construct(private readonly AnalyticsRecorder $analytics) {}
+
     /**
      * Create a new conversation for an anonymous widget visitor.
      *
@@ -32,6 +35,17 @@ class StartConversationService
         ]);
 
         ConversationStarted::dispatch($conversation);
+
+        $this->analytics->record(
+            eventType:      'conversation_started',
+            organizationId: (string) $chatbot->organization_id,
+            chatbotId:      (string) $chatbot->id,
+            conversationId: (string) $conversation->id,
+            context: [
+                'visitor_id' => $visitorId,
+                'source_url' => $sourceUrl,
+            ],
+        );
 
         return $conversation;
     }
