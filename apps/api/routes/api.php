@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\ApiKeys\ApiKeysController;
+use App\Http\Controllers\Api\V1\Billing\BillingController;
+use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Chatbots\AnalyticsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
@@ -31,6 +33,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/up', fn () => response()->json(['status' => 'ok']));
+
+// Stripe webhook — verified by Cashier via STRIPE_WEBHOOK_SECRET.
+Route::post('v1/webhooks/stripe', [StripeWebhookController::class, 'handleWebhook']);
 
 Route::prefix('v1')->group(function () {
 
@@ -64,10 +69,20 @@ Route::prefix('v1')->group(function () {
 
     // ── Chatbots ──────────────────────────────────────────────────────────────
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
-        Route::apiResource('chatbots', ChatbotsController::class);
+        Route::apiResource('chatbots', ChatbotsController::class)
+            ->except(['store']);
+        Route::post('chatbots', [ChatbotsController::class, 'store'])
+            ->middleware('plan-limit:chatbots');
         Route::get('chatbots/{chatbot}/embed-code', [ChatbotsController::class, 'embedCode']);
         Route::get('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'show']);
         Route::patch('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'update']);
+
+        // ── Billing ───────────────────────────────────────────────────────────
+        Route::prefix('billing')->group(function () {
+            Route::get('subscription',      [BillingController::class, 'subscription']);
+            Route::post('checkout-session', [BillingController::class, 'checkoutSession']);
+            Route::post('portal-session',   [BillingController::class, 'portalSession']);
+        });
 
         // ── API Keys ──────────────────────────────────────────────────────────
         Route::apiResource('api-keys', ApiKeysController::class)->only(['index', 'store', 'destroy']);

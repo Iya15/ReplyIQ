@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\SyncSubscriptionPlan;
 use App\Models\Chatbot;
 use App\Models\Document;
 use App\Models\Organization;
@@ -10,6 +11,7 @@ use App\Policies\DocumentPolicy;
 use App\Policies\OrganizationPolicy;
 use App\Services\Ai\Contracts\LlmClient;
 use App\Services\Ai\LlmClientFactory;
+use App\Services\Billing\PlanLimits;
 use App\Services\Embedding\EmbeddingClient;
 use App\Services\Embedding\EmbeddingClientFactory;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -20,10 +22,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Cashier\Cashier;
+use Laravel\Cashier\Events\WebhookHandled;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,10 +43,16 @@ class AppServiceProvider extends ServiceProvider
             LlmClient::class,
             fn ($app) => LlmClientFactory::resolve($app),
         );
+
+        $this->app->singleton(PlanLimits::class);
     }
 
     public function boot(): void
     {
+        Cashier::useCustomerModel(Organization::class);
+
+        Event::listen(WebhookHandled::class, SyncSubscriptionPlan::class);
+
         $this->configurePolicies();
         $this->configureRateLimiters();
         $this->configureEmailVerification();

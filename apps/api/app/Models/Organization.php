@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Cashier\Billable;
 
 class Organization extends Model
 {
-    use HasFactory, HasUuids;
+    use Billable, HasFactory, HasUuids;
 
     protected $fillable = [
         'name',
@@ -18,6 +19,9 @@ class Organization extends Model
         'plan',
         'trial_ends_at',
         'settings',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
     ];
 
     protected function casts(): array

@@ -339,6 +339,46 @@ export interface StoreApiKeyPayload {
   name: string;
 }
 
+// ── Billing ───────────────────────────────────────────────────────────────────
+
+export type PlanSlug = 'free' | 'starter' | 'pro' | 'business';
+
+export interface UsageMetric {
+  current: number;
+  limit:   number; // -1 = unlimited
+}
+
+export interface PlanLimits {
+  chatbots:           number;
+  messages_per_month: number;
+  documents:          number;
+  team_size:          number;
+  allowed_models:     string[];
+  ai_provider:        string;
+}
+
+export interface SubscriptionInfo {
+  stripe_status:        string;
+  current_period_end:   string | null;
+  cancel_at_period_end: boolean;
+}
+
+export interface BillingSubscription {
+  plan:         PlanSlug;
+  subscription: SubscriptionInfo | null;
+  usage: {
+    chatbots:           UsageMetric;
+    documents:          UsageMetric;
+    team_size:          UsageMetric;
+    messages_per_month: UsageMetric;
+  };
+  limits: PlanLimits;
+}
+
+export interface CheckoutSessionPayload {
+  price_id: string;
+}
+
 export interface StoreDocumentTextPayload {
   title: string;
   content: string;

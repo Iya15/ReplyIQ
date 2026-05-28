@@ -45,6 +45,12 @@ export type {
   AcceptInvitationPayload,
   ApiKey,
   StoreApiKeyPayload,
+  PlanSlug,
+  UsageMetric,
+  PlanLimits,
+  SubscriptionInfo,
+  BillingSubscription,
+  CheckoutSessionPayload,
 } from './types';
 
 // ApiError is a class — runtime value, importable without `type`
@@ -62,3 +68,4 @@ export { createConversationEndpoints } from './endpoints/conversations';
 export { createAnalyticsEndpoints } from './endpoints/analytics';
 export { createTeamEndpoints } from './endpoints/team';
 export { createApiKeyEndpoints } from './endpoints/api-keys';
+export { createBillingEndpoints } from './endpoints/billing';

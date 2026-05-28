@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  CreditCard,
   LayoutDashboard,
   Bot,
   MessageSquare,
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { label: 'Conversations', href: '/conversations',   icon: MessageSquare },
   { label: 'Analytics',     href: '/analytics',       icon: BarChart3 },
   { label: 'Team',          href: '/team',            icon: Users },
+  { label: 'Billing',       href: '/billing',         icon: CreditCard },
   { label: 'Settings',      href: '/settings',        icon: Settings },
 ] as const;
 

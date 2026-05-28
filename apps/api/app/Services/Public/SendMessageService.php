@@ -8,6 +8,7 @@ use App\Jobs\GenerateAiReplyJob;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\Analytics\AnalyticsRecorder;
+use Illuminate\Support\Facades\Redis;
 
 class SendMessageService
 {
@@ -41,6 +42,17 @@ class SendMessageService
 
         // Dispatch the AI reply job to the 'replies' queue.
         GenerateAiReplyJob::dispatch($conversation, $assistantMessage);
+
+        // Increment the monthly message counter for plan-limit checks.
+        // Fire-and-forget — Redis errors must not fail the message send.
+        try {
+            $key = 'usage:messages:' . $conversation->organization_id . ':' . now()->format('Y-m');
+            Redis::incr($key);
+            // TTL: end of current month + 7-day grace period.
+            Redis::expireat($key, (int) now()->endOfMonth()->addDays(7)->timestamp);
+        } catch (\Throwable) {
+            // Intentionally swallowed — analytics/billing counters are non-critical.
+        }
 
         $this->analytics->record(
             eventType:      'message_sent',

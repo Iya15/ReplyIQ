@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApiKeyAuth;
+use App\Http\Middleware\EnforcePlanLimit;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\WidgetAuth;
 use Illuminate\Console\Scheduling\Schedule;
@@ -18,14 +19,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'tenant'  => ResolveTenant::class,
-            'widget'  => WidgetAuth::class,
-            'api-key' => ApiKeyAuth::class,
+            'tenant'     => ResolveTenant::class,
+            'widget'     => WidgetAuth::class,
+            'api-key'    => ApiKeyAuth::class,
+            'plan-limit' => EnforcePlanLimit::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('analytics:flush')->everyMinute()->withoutOverlapping();
         $schedule->command('analytics:views:refresh')->everyThirtyMinutes()->withoutOverlapping();
+        $schedule->job(\App\Jobs\TrackUsageJob::class)->dailyAt('02:00')->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
