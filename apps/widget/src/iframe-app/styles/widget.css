@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens (overridden at runtime by App.tsx) ─────────────────────── */
+:root {
+  --riq-primary:  #4f46e5;
+  --riq-text:     #0f172a;
+  --riq-bg:       #ffffff;
+  --riq-surface:  #f1f5f9;
+  --riq-border:   #e2e8f0;
+  --riq-font:     Inter, system-ui, sans-serif;
+  --riq-radius:   12px;
+}
+
+html, body, #root {
+  height:  100%;
+  margin:  0;
+  padding: 0;
+  font-family: var(--riq-font);
+  background:  var(--riq-bg);
+  color:       var(--riq-text);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes riq-slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes riq-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes riq-bounce-dot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%            { transform: translateY(-5px); }
+}
+
+.riq-msg-enter {
+  animation: riq-slide-up 0.18s ease both;
+}
+
+.riq-fade-in {
+  animation: riq-fade-in 0.2s ease both;
+}
+
+/* Typing indicator dots */
+.riq-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--riq-text);
+  opacity: 0.45;
+  animation: riq-bounce-dot 1.2s infinite ease-in-out;
+}
+.riq-dot:nth-child(1) { animation-delay: 0s; }
+.riq-dot:nth-child(2) { animation-delay: 0.2s; }
+.riq-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Scrollbar — thin for clean look */
+.riq-scroll::-webkit-scrollbar { width: 4px; }
+.riq-scroll::-webkit-scrollbar-track { background: transparent; }
+.riq-scroll::-webkit-scrollbar-thumb { background: var(--riq-border); border-radius: 2px; }
+
+/* Markdown content inside assistant bubbles */
+.riq-prose p        { margin: 0 0 0.5em; }
+.riq-prose p:last-child { margin-bottom: 0; }
+.riq-prose ul, .riq-prose ol { margin: 0.25em 0 0.5em 1.25em; }
+.riq-prose li       { margin-bottom: 0.2em; }
+.riq-prose code     { font-size: 0.85em; background: rgba(0,0,0,0.07); padding: 0.1em 0.3em; border-radius: 3px; }
+.riq-prose pre code { background: none; padding: 0; }
+.riq-prose pre      { background: rgba(0,0,0,0.06); padding: 0.6em 0.8em; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+.riq-prose a        { color: var(--riq-primary); text-decoration: underline; }
+.riq-prose strong   { font-weight: 600; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .riq-msg-enter,
+  .riq-fade-in { animation: none; }
+  .riq-dot      { animation: none; opacity: 0.45; }
+}

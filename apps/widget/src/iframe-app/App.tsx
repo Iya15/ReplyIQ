@@ -1,108 +1,127 @@
-import { useEffect, useState } from 'react';
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-interface ChatbotConfig {
-  public_id:       string;
-  name:            string;
-  logo_url:        string | null;
-  primary_color:   string | null;
-  text_color:      string | null;
-  welcome_message: string | null;
-  position:        string | null;
-  show_branding:   boolean;
-}
+import { useEffect, useRef, useState } from 'react';
+import ChatWindow from './components/ChatWindow';
+import { getSession, setSession } from './lib/storage';
+import type { ChatbotConfig, Session } from './lib/types';
 
 interface Props {
   chatbotId: string;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function applyTheme(config: ChatbotConfig): void {
+  const r = document.documentElement.style;
+  r.setProperty('--riq-primary', config.primary_color);
+  r.setProperty('--riq-text',    config.text_color);
+  r.setProperty('--riq-font',    config.font_family);
+
+  if (config.theme === 'dark') {
+    r.setProperty('--riq-bg',      '#0f172a');
+    r.setProperty('--riq-surface', '#1e293b');
+    r.setProperty('--riq-border',  '#334155');
+  } else {
+    r.setProperty('--riq-bg',      '#ffffff');
+    r.setProperty('--riq-surface', '#f1f5f9');
+    r.setProperty('--riq-border',  '#e2e8f0');
+  }
+}
 
 export default function App({ chatbotId }: Props) {
-  const [config, setConfig] = useState<ChatbotConfig | null>(null);
-  const [error, setError]   = useState<string | null>(null);
+  const [config,  setConfig]  = useState<ChatbotConfig | null>(null);
+  const [session, setSessionState] = useState<Session | null>(null);
+  const [error,   setError]   = useState<string | null>(null);
+  const readySent = useRef(false);
 
+  // 1. Fetch chatbot config + apply CSS vars
   useEffect(() => {
-    if (!chatbotId) {
-      setError('No chatbot ID provided.');
-      return;
-    }
+    if (!chatbotId) { setError('No chatbot ID.'); return; }
 
     fetch(`${__WIDGET_API_URL__}/public/chatbots/${encodeURIComponent(chatbotId)}/config`)
-      .then((res) => {
+      .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status.toString()}`);
         return res.json() as Promise<{ data: ChatbotConfig }>;
       })
       .then(({ data }) => {
+        applyTheme(data);
         setConfig(data);
-
-        // Apply chatbot branding as CSS custom properties.
-        if (data.primary_color) {
-          document.documentElement.style.setProperty('--color-primary', data.primary_color);
-        }
-        if (data.text_color) {
-          document.documentElement.style.setProperty('--color-text', data.text_color);
-        }
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Failed to load widget.');
       });
   }, [chatbotId]);
 
-  // ── Loading ──────────────────────────────────────────────────────────────────
+  // 2. Once config is ready: restore session from sessionStorage, then signal parent
+  useEffect(() => {
+    if (!config || readySent.current) return;
+    readySent.current = true;
 
+    const saved = getSession();
+    if (saved) setSessionState(saved);
+
+    window.parent.postMessage({ type: 'riq:ready' }, '*');
+  }, [config]);
+
+  // 3. Listen for riq:init from parent (new session handshake)
+  useEffect(() => {
+    function onMessage(ev: MessageEvent) {
+      if (ev.data?.type !== 'riq:init') return;
+
+      const s: Session = {
+        token:          String(ev.data.token          ?? ''),
+        conversationId: String(ev.data.conversationId ?? ''),
+        visitorId:      String(ev.data.visitorId      ?? ''),
+        apiBase:        String(ev.data.apiBase        ?? __WIDGET_API_URL__),
+      };
+      setSession(s);
+      setSessionState(s);
+    }
+
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  // ── Error state ────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center p-4 text-sm text-red-500">
-        {error}
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+        <span className="text-sm text-red-500">{error}</span>
+        <button
+          onClick={() => { setError(null); window.location.reload(); }}
+          className="rounded-lg px-3 py-1.5 text-xs font-medium
+                     bg-[var(--riq-surface)] text-[var(--riq-text)]
+                     hover:opacity-80 transition-opacity"
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
+  // ── Loading skeleton ───────────────────────────────────────────────────────
   if (!config) {
     return (
-      <div className="flex h-full items-center justify-center p-4">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="flex h-full flex-col overflow-hidden"
+           style={{ background: 'var(--riq-bg)' }}>
+        {/* Header skeleton */}
+        <div className="flex items-center gap-3 border-b border-[var(--riq-border)] px-4 py-3">
+          <div className="h-8 w-8 rounded-full animate-pulse bg-[var(--riq-surface)]" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3 w-24 rounded animate-pulse bg-[var(--riq-surface)]" />
+            <div className="h-2 w-12 rounded animate-pulse bg-[var(--riq-surface)]" />
+          </div>
+        </div>
+        {/* Body skeleton */}
+        <div className="flex flex-1 flex-col gap-3 px-4 py-4">
+          <div className="h-8 w-48 rounded-xl animate-pulse bg-[var(--riq-surface)]" />
+          <div className="h-8 w-36 self-end rounded-xl animate-pulse bg-[var(--riq-surface)]" />
+          <div className="h-8 w-56 rounded-xl animate-pulse bg-[var(--riq-surface)]" />
+        </div>
+        {/* Input skeleton */}
+        <div className="border-t border-[var(--riq-border)] px-3 py-2.5">
+          <div className="h-9 rounded-xl animate-pulse bg-[var(--riq-surface)]" />
+        </div>
       </div>
     );
   }
 
-  // ── Placeholder UI (M3.4 replaces this with the real chat interface) ─────────
-
-  return (
-    <div className="flex h-full flex-col bg-white text-gray-900">
-      <header className="flex items-center gap-3 border-b px-4 py-3">
-        {config.logo_url && (
-          <img
-            src={config.logo_url}
-            alt={config.name}
-            className="h-8 w-8 rounded-full object-cover"
-          />
-        )}
-        <p className="font-semibold">{config.name}</p>
-      </header>
-
-      <main className="flex flex-1 items-center justify-center p-6 text-center text-sm text-gray-500">
-        <div className="space-y-2">
-          <p className="font-medium text-gray-700">Widget for {config.name}</p>
-          <p>Chat UI coming in M3.4</p>
-        </div>
-      </main>
-
-      {config.show_branding && (
-        <footer className="border-t px-4 py-2 text-center text-xs text-gray-400">
-          Powered by{' '}
-          <a
-            href="https://replyiq.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-gray-600"
-          >
-            ReplyIQ
-          </a>
-        </footer>
-      )}
-    </div>
-  );
+  // ── Ready ──────────────────────────────────────────────────────────────────
+  return <ChatWindow config={config} session={session} />;
 }
