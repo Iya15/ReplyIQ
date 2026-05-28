@@ -136,15 +136,6 @@ cd apps/api && vendor/bin/pint    # PHP
 | Build | Turborepo · pnpm workspaces |
 | CI/CD | GitHub Actions · Vercel (web) · Render (api) |
 
-## Staging
-
-| Service | URL |
-|---|---|
-| Dashboard | https://staging.replyiq.com |
-| API | https://api-staging.replyiq.com |
-
-See [docs/deploy/staging.md](docs/deploy/staging.md) for provisioning instructions.
-
 ## Architecture
 
 See [docs/architecture/decisions/](docs/architecture/decisions/) for Architecture Decision Records.
