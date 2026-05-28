@@ -36,14 +36,14 @@ return [
     */
 
     'breadcrumbs' => [
-        'logs'                    => true,
-        'cache'                   => false,
-        'livewire'                => false,
-        'sql_bindings'            => env('APP_DEBUG', false),
-        'queue_info'              => true,
-        'command_info'            => true,
-        'http_client_requests'    => env('APP_DEBUG', false),
-        'notifications'           => false,
+        'logs' => true,
+        'cache' => false,
+        'livewire' => false,
+        'sql_bindings' => env('APP_DEBUG', false),
+        'queue_info' => true,
+        'command_info' => true,
+        'http_client_requests' => env('APP_DEBUG', false),
+        'notifications' => false,
     ],
 
     /*
@@ -53,15 +53,15 @@ return [
     */
 
     'tracing' => [
-        'queue_job_transactions'         => env('SENTRY_TRACE_QUEUE_ENABLED', false),
-        'queue_jobs'                     => true,
-        'sql_queries'                    => env('APP_DEBUG', false),
-        'sql_origin'                     => false,
-        'http_client_requests'           => false,
-        'redis_commands'                 => false,
-        'missing_routes'                 => false,
-        'views'                          => false,
-        'livewire'                       => false,
+        'queue_job_transactions' => env('SENTRY_TRACE_QUEUE_ENABLED', false),
+        'queue_jobs' => true,
+        'sql_queries' => env('APP_DEBUG', false),
+        'sql_origin' => false,
+        'http_client_requests' => false,
+        'redis_commands' => false,
+        'missing_routes' => false,
+        'views' => false,
+        'livewire' => false,
     ],
 
     /*

@@ -42,7 +42,7 @@ class AnalyticsController extends Controller
         $s = $rows[0] ?? null;
 
         $totalConversations = (int) (($s->total_conversations ?? 0) ?: 0);
-        $unansweredCount    = (int) (($s->unanswered_count ?? 0) ?: 0);
+        $unansweredCount = (int) (($s->unanswered_count ?? 0) ?: 0);
 
         $resolvedCount = Conversation::where('chatbot_id', $chatbot->id)
             ->where('status', 'resolved')
@@ -51,17 +51,17 @@ class AnalyticsController extends Controller
 
         return $this->ok([
             'total_conversations' => $totalConversations,
-            'total_messages'      => (int) (($s->total_messages ?? 0) ?: 0),
-            'avg_latency_ms'      => $s && $s->avg_latency_ms !== null ? (int) $s->avg_latency_ms : null,
-            'avg_confidence'      => $s && $s->avg_confidence !== null ? (float) $s->avg_confidence : null,
-            'unanswered_rate'     => $totalConversations > 0
+            'total_messages' => (int) (($s->total_messages ?? 0) ?: 0),
+            'avg_latency_ms' => $s && $s->avg_latency_ms !== null ? (int) $s->avg_latency_ms : null,
+            'avg_confidence' => $s && $s->avg_confidence !== null ? (float) $s->avg_confidence : null,
+            'unanswered_rate' => $totalConversations > 0
                 ? round($unansweredCount / $totalConversations, 2)
                 : 0.0,
             'funnel' => [
-                'widget_opens'          => (int) (($s->widget_opens ?? 0) ?: 0),
+                'widget_opens' => (int) (($s->widget_opens ?? 0) ?: 0),
                 'conversations_started' => $totalConversations,
-                'messages_sent'         => (int) (($s->total_messages ?? 0) ?: 0),
-                'resolved'              => $resolvedCount,
+                'messages_sent' => (int) (($s->total_messages ?? 0) ?: 0),
+                'resolved' => $resolvedCount,
             ],
         ], $r);
     }
@@ -183,7 +183,7 @@ class AnalyticsController extends Controller
         $list = array_map(
             fn (object $row): array => [
                 'content_preview' => (string) $row->content_preview,
-                'count'           => (int) $row->count,
+                'count' => (int) $row->count,
             ],
             $rows,
         );
@@ -200,17 +200,17 @@ class AnalyticsController extends Controller
 
         if ($range === 'custom') {
             $rawFrom = $r->string('from')->toString();
-            $rawTo   = $r->string('to')->toString();
-            $from    = $rawFrom ? Carbon::parse($rawFrom)->startOfDay() : now()->subDays(7)->startOfDay();
-            $to      = $rawTo   ? Carbon::parse($rawTo)->endOfDay()     : now()->endOfDay();
+            $rawTo = $r->string('to')->toString();
+            $from = $rawFrom ? Carbon::parse($rawFrom)->startOfDay() : now()->subDays(7)->startOfDay();
+            $to = $rawTo ? Carbon::parse($rawTo)->endOfDay() : now()->endOfDay();
         } else {
             $days = match ($range) {
-                '30d'  => 30,
-                '90d'  => 90,
+                '30d' => 30,
+                '90d' => 90,
                 default => 7,
             };
             $from = now()->subDays($days)->startOfDay();
-            $to   = now()->endOfDay();
+            $to = now()->endOfDay();
         }
 
         return [$from, $to];

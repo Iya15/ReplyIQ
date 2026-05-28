@@ -16,8 +16,8 @@ class SyncSubscriptionPlan
 {
     public function handle(WebhookHandled $event): void
     {
-        $type    = $event->payload['type'] ?? '';
-        $object  = $event->payload['data']['object'] ?? [];
+        $type = $event->payload['type'] ?? '';
+        $object = $event->payload['data']['object'] ?? [];
 
         if (! in_array($type, [
             'customer.subscription.created',
@@ -40,6 +40,7 @@ class SyncSubscriptionPlan
 
         if ($type === 'customer.subscription.deleted') {
             $org->update(['plan' => Plans::FREE]);
+
             return;
         }
 

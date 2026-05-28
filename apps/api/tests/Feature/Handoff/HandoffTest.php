@@ -3,13 +3,15 @@
 // @requires PostgreSQL (CI/Docker only)
 
 use App\Enums\ConversationStatus;
-use App\Enums\MessageRole;
+use App\Jobs\GenerateAiReplyJob;
 use App\Models\Chatbot;
 use App\Models\Conversation;
 use App\Models\Membership;
 use App\Models\Message;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\Ai\RagPipeline;
+use App\Services\Analytics\AnalyticsRecorder;
 use App\Services\Public\WidgetSessionToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -22,8 +24,8 @@ uses(RefreshDatabase::class);
 
 function handoffTeam(): array
 {
-    $org     = Organization::factory()->create();
-    $agent   = User::factory()->create();
+    $org = Organization::factory()->create();
+    $agent = User::factory()->create();
     $chatbot = Chatbot::factory()->for($org)->create(['status' => 'active']);
     $chatbot->load('settings');
 
@@ -31,9 +33,9 @@ function handoffTeam(): array
 
     $conv = Conversation::factory()->create([
         'organization_id' => $org->id,
-        'chatbot_id'      => $chatbot->id,
-        'visitor_id'      => (string) Str::uuid(),
-        'status'          => 'active',
+        'chatbot_id' => $chatbot->id,
+        'visitor_id' => (string) Str::uuid(),
+        'status' => 'active',
     ]);
 
     $token = $agent->createToken('test')->plainTextToken;
@@ -107,7 +109,7 @@ it('visitor can request a human agent', function () {
     Notification::fake();
     ['chatbot' => $chatbot, 'conv' => $conv] = handoffTeam();
 
-    $tokenSvc  = app(WidgetSessionToken::class);
+    $tokenSvc = app(WidgetSessionToken::class);
     $widgetJwt = $tokenSvc->issue($chatbot->public_id, (string) $conv->id, $conv->visitor_id);
 
     $this->withHeader('Authorization', "Bearer {$widgetJwt}")
@@ -123,7 +125,7 @@ it('request-human is idempotent when already escalated', function () {
     ['chatbot' => $chatbot, 'conv' => $conv] = handoffTeam();
     $conv->update(['status' => 'escalated', 'escalated_at' => now()]);
 
-    $tokenSvc  = app(WidgetSessionToken::class);
+    $tokenSvc = app(WidgetSessionToken::class);
     $widgetJwt = $tokenSvc->issue($chatbot->public_id, (string) $conv->id, $conv->visitor_id);
 
     $this->withHeader('Authorization', "Bearer {$widgetJwt}")
@@ -144,13 +146,13 @@ it('GenerateAiReplyJob skips and removes placeholder when conversation is escala
     $assistantMsg = Message::factory()->create([
         'organization_id' => $org->id,
         'conversation_id' => $conv->id,
-        'role'            => 'assistant',
-        'content'         => '',
-        'status'          => 'pending',
+        'role' => 'assistant',
+        'content' => '',
+        'status' => 'pending',
     ]);
 
-    $job = new \App\Jobs\GenerateAiReplyJob($conv, $assistantMsg);
-    $job->handle(app(\App\Services\Ai\RagPipeline::class), app(\App\Services\Analytics\AnalyticsRecorder::class));
+    $job = new GenerateAiReplyJob($conv, $assistantMsg);
+    $job->handle(app(RagPipeline::class), app(AnalyticsRecorder::class));
 
     expect(Message::find($assistantMsg->id))->toBeNull();
 });

@@ -47,23 +47,23 @@ class RagPipeline
                 ?? "I'm sorry, I don't have enough information to answer that question.";
 
             return new GeneratedReply(
-                content:      $fallback,
-                confidence:   0.0,
-                sources:      [],
-                tokens_used:  0,
-                latency_ms:   (int) ((hrtime(true) - $start) / 1_000_000),
+                content: $fallback,
+                confidence: 0.0,
+                sources: [],
+                tokens_used: 0,
+                latency_ms: (int) ((hrtime(true) - $start) / 1_000_000),
             );
         }
 
         $messages = $this->promptBuilder->build($chatbot, $query, $chunks, $history);
 
-        $model       = $chatbot->settings?->model       ?? 'gpt-4o-mini';
-        $maxTokens   = $chatbot->settings?->max_tokens  ?? 800;
+        $model = $chatbot->settings?->model ?? 'gpt-4o-mini';
+        $maxTokens = $chatbot->settings?->max_tokens ?? 800;
         $temperature = $chatbot->settings?->temperature ?? 0.3;
 
         try {
             if ($onToken !== null) {
-                $content    = '';
+                $content = '';
                 $tokensUsed = 0;
 
                 foreach ($this->llm->chatStream($messages, $model, $maxTokens, $temperature) as $delta) {
@@ -72,39 +72,39 @@ class RagPipeline
                 }
             } else {
                 $llmResponse = $this->llm->chat($messages, $model, $maxTokens, $temperature);
-                $content     = $llmResponse->content;
-                $tokensUsed  = $llmResponse->tokens_used;
+                $content = $llmResponse->content;
+                $tokensUsed = $llmResponse->tokens_used;
             }
         } catch (\Throwable $e) {
             Log::error('RagPipeline: LLM call failed', [
                 'chatbot_id' => $chatbot->id,
-                'model'      => $model,
-                'error'      => $e->getMessage(),
+                'model' => $model,
+                'error' => $e->getMessage(),
             ]);
 
             return new GeneratedReply(
-                content:     "I'm sorry, I'm unable to respond right now. Please try again in a moment.",
-                confidence:  0.0,
-                sources:     [],
+                content: "I'm sorry, I'm unable to respond right now. Please try again in a moment.",
+                confidence: 0.0,
+                sources: [],
                 tokens_used: 0,
-                latency_ms:  (int) ((hrtime(true) - $start) / 1_000_000),
+                latency_ms: (int) ((hrtime(true) - $start) / 1_000_000),
             );
         }
 
         $confidence = (float) $chunks->max(fn (RetrievedChunk $c) => $c->similarity);
 
         $sources = $chunks->map(fn (RetrievedChunk $c) => [
-            'chunk_id'    => $c->id,
+            'chunk_id' => $c->id,
             'document_id' => $c->document_id,
-            'similarity'  => $c->similarity,
+            'similarity' => $c->similarity,
         ])->values()->all();
 
         return new GeneratedReply(
-            content:     $content,
-            confidence:  $confidence,
-            sources:     $sources,
+            content: $content,
+            confidence: $confidence,
+            sources: $sources,
             tokens_used: $tokensUsed,
-            latency_ms:  (int) ((hrtime(true) - $start) / 1_000_000),
+            latency_ms: (int) ((hrtime(true) - $start) / 1_000_000),
         );
     }
 }

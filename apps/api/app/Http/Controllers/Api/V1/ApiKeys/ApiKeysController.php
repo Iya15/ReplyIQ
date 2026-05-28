@@ -20,12 +20,12 @@ class ApiKeysController extends Controller
 
     public function store(StoreApiKeyRequest $r): JsonResponse
     {
-        $plain = 'rk_live_' . Str::random(32);
+        $plain = 'rk_live_'.Str::random(32);
 
         $key = ApiKey::create([
-            'name'       => (string) $r->validated('name'),
-            'key_hash'   => hash('sha256', $plain),
-            'prefix'     => substr($plain, 0, 12),
+            'name' => (string) $r->validated('name'),
+            'key_hash' => hash('sha256', $plain),
+            'prefix' => substr($plain, 0, 12),
             'created_by' => $r->user()?->id,
         ]);
 

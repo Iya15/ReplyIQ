@@ -10,7 +10,7 @@ class InviteMemberRequest extends FormRequest
     {
         return [
             'email' => ['required', 'email', 'max:255'],
-            'role'  => ['required', 'string', 'in:owner,admin,member'],
+            'role' => ['required', 'string', 'in:owner,admin,member'],
         ];
     }
 }

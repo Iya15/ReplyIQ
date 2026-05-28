@@ -28,18 +28,18 @@ class EnforcePlanLimit
             return $next($request);
         }
 
-        $plan   = $org->plan;
+        $plan = $org->plan;
         $limits = Plans::get($plan);
-        $limit  = $limits[$metric] ?? 0;
+        $limit = $limits[$metric] ?? 0;
 
         return response()->json([
             'error' => [
-                'code'    => 'plan_limit_exceeded',
+                'code' => 'plan_limit_exceeded',
                 'message' => "Your {$plan} plan allows {$limit} {$metric}. Upgrade to create more.",
                 'details' => [
-                    'metric'  => $metric,
-                    'limit'   => $limit,
-                    'plan'    => $plan,
+                    'metric' => $metric,
+                    'limit' => $limit,
+                    'plan' => $plan,
                     'current' => $this->limits->currentUsage($org, $metric),
                 ],
             ],

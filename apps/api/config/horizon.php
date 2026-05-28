@@ -199,50 +199,50 @@ return [
     'defaults' => [
         // Default queue: low-priority background tasks (notifications, analytics, etc.)
         'supervisor-default' => [
-            'connection'          => 'redis',
-            'queue'               => ['default'],
-            'balance'             => 'auto',
+            'connection' => 'redis',
+            'queue' => ['default'],
+            'balance' => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses'        => 1,
-            'maxTime'             => 0,
-            'maxJobs'             => 0,
-            'memory'              => 128,
-            'tries'               => 3,
-            'timeout'             => 90,
-            'nice'                => 5,
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 90,
+            'nice' => 5,
         ],
 
         // Replies queue: AI response generation — latency-sensitive, separate from
         // ingestion so large crawl jobs cannot delay chat reply delivery.
         'supervisor-replies' => [
-            'connection'          => 'redis',
-            'queue'               => ['replies'],
-            'balance'             => 'auto',
+            'connection' => 'redis',
+            'queue' => ['replies'],
+            'balance' => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses'        => 3,
-            'maxTime'             => 0,
-            'maxJobs'             => 0,
+            'maxProcesses' => 3,
+            'maxTime' => 0,
+            'maxJobs' => 0,
             // Each reply job has a 60s timeout; 90s gives Horizon time to record failures.
-            'memory'              => 256,
-            'tries'               => 3,
-            'timeout'             => 90,
-            'nice'                => 0,
+            'memory' => 256,
+            'tries' => 3,
+            'timeout' => 90,
+            'nice' => 0,
         ],
 
         // Ingestion queue: document processing + crawling — CPU/memory-heavy, lower priority.
         'supervisor-ingestion' => [
-            'connection'  => 'redis',
-            'queue'       => ['ingestion'],
-            'balance'     => 'simple',
-            'processes'   => 2,
-            'maxTime'     => 0,
-            'maxJobs'     => 0,
+            'connection' => 'redis',
+            'queue' => ['ingestion'],
+            'balance' => 'simple',
+            'processes' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
             // Embeddings for large docs can use ~200 MB; budget headroom above that.
-            'memory'      => 512,
-            'tries'       => 3,
+            'memory' => 512,
+            'tries' => 3,
             // 30s above the job's 600s timeout so Horizon can record the failure.
-            'timeout'     => 630,
-            'nice'        => 10,
+            'timeout' => 630,
+            'nice' => 10,
         ],
     ],
 
@@ -251,7 +251,7 @@ return [
             // At 100 concurrent conversations × 10 messages, with ~4s avg reply time,
             // 20 workers sustains ~300 replies/min without queue build-up.
             'supervisor-replies' => [
-                'maxProcesses'    => 20,
+                'maxProcesses' => 20,
                 'balanceMaxShift' => 3,
                 'balanceCooldown' => 3,
             ],
@@ -260,7 +260,7 @@ return [
                 'processes' => 8,
             ],
             'supervisor-default' => [
-                'maxProcesses'    => 5,
+                'maxProcesses' => 5,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 5,
             ],

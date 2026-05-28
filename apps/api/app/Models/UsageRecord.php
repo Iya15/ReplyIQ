@@ -24,8 +24,8 @@ class UsageRecord extends Model
     {
         return [
             'period_start' => 'date',
-            'period_end'   => 'date',
-            'recorded_at'  => 'datetime',
+            'period_end' => 'date',
+            'recorded_at' => 'datetime',
         ];
     }
 }

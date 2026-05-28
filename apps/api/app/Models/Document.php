@@ -10,12 +10,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property DocumentSourceType $source_type
  * @property DocumentStatus $status
  * @property array<string, mixed> $metadata
- * @property \Illuminate\Support\Carbon|null $processed_at
+ * @property Carbon|null $processed_at
  */
 class Document extends Model
 {

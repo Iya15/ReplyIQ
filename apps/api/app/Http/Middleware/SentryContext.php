@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Organization;
 use Closure;
 use Illuminate\Http\Request;
-use Sentry\Laravel\Integration;
 use Sentry\State\Scope;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -29,7 +29,7 @@ class SentryContext
             $user = $request->user();
             if ($user) {
                 $scope->setUser([
-                    'id'    => (string) $user->id,
+                    'id' => (string) $user->id,
                     'email' => (string) $user->email,
                 ]);
                 $scope->setTag('user.id', (string) $user->id);
@@ -37,12 +37,12 @@ class SentryContext
 
             // Tenant context
             if (app()->bound('currentOrganization')) {
-                /** @var \App\Models\Organization $org */
+                /** @var Organization $org */
                 $org = app('currentOrganization');
-                $scope->setTag('org.id',   (string) $org->id);
+                $scope->setTag('org.id', (string) $org->id);
                 $scope->setTag('org.plan', (string) $org->plan);
                 $scope->setContext('organization', [
-                    'id'   => (string) $org->id,
+                    'id' => (string) $org->id,
                     'name' => (string) $org->name,
                     'plan' => (string) $org->plan,
                 ]);

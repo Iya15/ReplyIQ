@@ -22,7 +22,7 @@ class DocumentRepository
             ->where('chatbot_id', $chatbot->id)
             ->when(
                 isset($filters['status']),
-                fn($q) => $q->where('status', $filters['status']),
+                fn ($q) => $q->where('status', $filters['status']),
             )
             ->orderByDesc('created_at')
             ->paginate($perPage);

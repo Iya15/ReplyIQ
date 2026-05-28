@@ -20,6 +20,7 @@ class AcceptInvitationService
      *
      * @param  array{name?: string, password?: string}  $userData
      * @return array{user: User, token: string}
+     *
      * @throws ValidationException
      */
     public function execute(Invitation $invitation, array $userData = []): array
@@ -30,13 +31,13 @@ class AcceptInvitationService
             if (! $user) {
                 if (empty($userData['name']) || empty($userData['password'])) {
                     throw ValidationException::withMessages([
-                        'name'     => ['Your name is required to create an account.'],
+                        'name' => ['Your name is required to create an account.'],
                         'password' => ['A password is required to create an account.'],
                     ]);
                 }
 
                 $user = User::create([
-                    'name'  => $userData['name'],
+                    'name' => $userData['name'],
                     'email' => $invitation->email,
                 ]);
                 $user->password_hash = $userData['password'];
@@ -47,7 +48,7 @@ class AcceptInvitationService
             // Add membership (idempotent — skip if already a member).
             Membership::firstOrCreate(
                 ['organization_id' => $invitation->organization_id, 'user_id' => $user->id],
-                ['role'            => $invitation->role],
+                ['role' => $invitation->role],
             );
 
             $invitation->update(['accepted_at' => now()]);

@@ -81,7 +81,7 @@ class WidgetAuth
 
         /** @var WidgetSessionToken $tokenSvc */
         $tokenSvc = app(WidgetSessionToken::class);
-        $claims   = $tokenSvc->verify($bearer);
+        $claims = $tokenSvc->verify($bearer);
 
         if (! $claims) {
             return $this->deny($request, 'invalid_token', 'Session token is invalid or expired.');
@@ -119,7 +119,7 @@ class WidgetAuth
         }
 
         $origin = $request->header('Origin', '');
-        $host   = (string) parse_url($origin, PHP_URL_HOST);
+        $host = (string) parse_url($origin, PHP_URL_HOST);
 
         foreach ($allowedDomains as $domain) {
             $pattern = ltrim($domain, '*.');
@@ -154,7 +154,7 @@ class WidgetAuth
             return $this->deny($request, 'missing_visitor_id', 'visitor_id is required.');
         }
 
-        $payload  = "{$chatbot->public_id}:{$visitorId}:{$timestamp}";
+        $payload = "{$chatbot->public_id}:{$visitorId}:{$timestamp}";
         $expected = hash_hmac('sha256', $payload, $chatbot->settings->widget_secret);
 
         if (! hash_equals($expected, strtolower((string) $signature))) {
@@ -170,7 +170,7 @@ class WidgetAuth
     {
         return response()->json([
             'error' => ['code' => $code, 'message' => $message],
-            'meta'  => ['request_id' => $request->header('X-Request-Id', (string) str()->uuid())],
+            'meta' => ['request_id' => $request->header('X-Request-Id', (string) str()->uuid())],
         ], Response::HTTP_UNAUTHORIZED);
     }
 }

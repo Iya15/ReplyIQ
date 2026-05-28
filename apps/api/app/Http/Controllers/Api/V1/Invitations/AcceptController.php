@@ -32,11 +32,11 @@ class AcceptController extends Controller
         }
 
         return $this->ok([
-            'email'             => $invitation->email,
-            'role'              => $invitation->role,
+            'email' => $invitation->email,
+            'role' => $invitation->role,
             'organization_name' => $invitation->organization->name,
-            'invited_by'        => $invitation->invitedBy?->name,
-            'expires_at'        => $invitation->expires_at,
+            'invited_by' => $invitation->invitedBy?->name,
+            'expires_at' => $invitation->expires_at,
         ], $r);
     }
 
@@ -61,7 +61,7 @@ class AcceptController extends Controller
 
         return $this->ok([
             'token' => $result['token'],
-            'user'  => UserResource::make($result['user']),
+            'user' => UserResource::make($result['user']),
         ], $r);
     }
 }

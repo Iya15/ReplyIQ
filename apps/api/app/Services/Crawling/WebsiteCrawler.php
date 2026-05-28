@@ -3,6 +3,7 @@
 namespace App\Services\Crawling;
 
 use App\DataObjects\CrawledPage;
+use App\Exceptions\SsrfBlockedException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Message\RequestInterface;
@@ -22,11 +23,15 @@ use Spatie\Crawler\Crawler;
  */
 class WebsiteCrawler
 {
-    private const USER_AGENT    = 'ReplyIQ-Crawler/1.0 (+https://replyiq.com/bot)';
-    private const MAX_PAGES     = 50;
-    private const MAX_DEPTH     = 3;
-    private const DELAY_MS      = 1000; // 1 req/s
-    private const MAX_BYTES     = 5 * 1024 * 1024; // 5 MB total content cap
+    private const USER_AGENT = 'ReplyIQ-Crawler/1.0 (+https://replyiq.com/bot)';
+
+    private const MAX_PAGES = 50;
+
+    private const MAX_DEPTH = 3;
+
+    private const DELAY_MS = 1000; // 1 req/s
+
+    private const MAX_BYTES = 5 * 1024 * 1024; // 5 MB total content cap
 
     /** @var array<string, string>|null  URL → html body; non-null = test mode */
     private ?array $fakes = null;
@@ -39,7 +44,7 @@ class WebsiteCrawler
      */
     public function withFakes(array $fakes): self
     {
-        $clone        = clone $this;
+        $clone = clone $this;
         $clone->fakes = $fakes;
 
         return $clone;
@@ -56,12 +61,12 @@ class WebsiteCrawler
      * }  $options
      * @return CrawledPage[]
      *
-     * @throws \App\Exceptions\SsrfBlockedException  when the start URL resolves to a blocked address.
+     * @throws SsrfBlockedException when the start URL resolves to a blocked address.
      */
     public function crawl(string $startUrl, array $options = []): array
     {
-        $maxPages        = $options['max_pages']        ?? self::MAX_PAGES;
-        $maxDepth        = $options['max_depth']        ?? self::MAX_DEPTH;
+        $maxPages = $options['max_pages'] ?? self::MAX_PAGES;
+        $maxDepth = $options['max_depth'] ?? self::MAX_DEPTH;
         $includePatterns = $options['include_patterns'] ?? [];
         $excludePatterns = $options['exclude_patterns'] ?? [];
 
@@ -70,8 +75,8 @@ class WebsiteCrawler
             SsrfGuard::assertSafe($startUrl);
         }
 
-        $observer = new ReplyIqCrawlObserver();
-        $profile  = new ReplyIqCrawlProfile($startUrl, $includePatterns, $excludePatterns);
+        $observer = new ReplyIqCrawlObserver;
+        $profile = new ReplyIqCrawlProfile($startUrl, $includePatterns, $excludePatterns);
 
         $builder = Crawler::create($startUrl, $this->clientOptions())
             ->crawlProfile($profile)
@@ -96,13 +101,13 @@ class WebsiteCrawler
      */
     private function buildPages(array $collected): array
     {
-        $extractor = new HtmlContentExtractor();
-        $pages     = [];
+        $extractor = new HtmlContentExtractor;
+        $pages = [];
         $totalBytes = 0;
 
         foreach ($collected as ['url' => $url, 'html' => $html]) {
             $content = $extractor->extract($html);
-            $title   = $extractor->extractTitle($html);
+            $title = $extractor->extractTitle($html);
 
             $totalBytes += strlen($content);
 
@@ -126,10 +131,10 @@ class WebsiteCrawler
         $stack->push($this->ssrfMiddleware(), 'ssrf_guard');
 
         return [
-            'handler'         => $stack,
-            'timeout'         => 10,
+            'handler' => $stack,
+            'timeout' => 10,
             'connect_timeout' => 5,
-            'headers'         => ['User-Agent' => self::USER_AGENT],
+            'headers' => ['User-Agent' => self::USER_AGENT],
         ];
     }
 
@@ -137,7 +142,7 @@ class WebsiteCrawler
     {
         return function (callable $handler): callable {
             return function (RequestInterface $request, array $options) use ($handler): PromiseInterface {
-                $uri  = $request->getUri();
+                $uri = $request->getUri();
                 $host = $uri->getHost();
                 $port = $uri->getPort()
                     ?? (strtolower($uri->getScheme()) === 'https' ? 443 : 80);

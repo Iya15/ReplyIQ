@@ -23,28 +23,33 @@ class MessageCompleted implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public readonly string $conversationId;
+
     public readonly string $messageId;
+
     public readonly string $content;
+
     public readonly string $status; // 'complete' | 'failed'
+
     /** @var array<mixed> */
-    public readonly array  $sources;
+    public readonly array $sources;
+
     public readonly ?float $confidence;
 
     public function __construct(Message $message)
     {
         $this->conversationId = (string) $message->conversation_id;
-        $this->messageId      = (string) $message->id;
-        $this->content        = $message->content;
-        $this->status         = $message->status->value;
-        $this->sources        = $message->sources ?? [];
-        $this->confidence     = $message->confidence;
+        $this->messageId = (string) $message->id;
+        $this->content = $message->content;
+        $this->status = $message->status->value;
+        $this->sources = $message->sources ?? [];
+        $this->confidence = $message->confidence;
     }
 
     /** @return Channel[] */
     public function broadcastOn(): array
     {
         return [
-            new PresenceChannel('chat.' . $this->conversationId),
+            new PresenceChannel('chat.'.$this->conversationId),
         ];
     }
 

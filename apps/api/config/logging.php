@@ -1,5 +1,6 @@
 <?php
 
+use Logtail\Monolog\LogtailHandler;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
@@ -55,8 +56,8 @@ return [
 
         // ── Production stack: JSON-formatted stderr + Logtail (if configured) ──
         'stack' => [
-            'driver'            => 'stack',
-            'channels'          => explode(',', env('LOG_STACK', 'stderr-json')),
+            'driver' => 'stack',
+            'channels' => explode(',', env('LOG_STACK', 'stderr-json')),
             'ignore_exceptions' => false,
         ],
 
@@ -64,10 +65,10 @@ return [
         // Used as the default in production. Better Stack (Logtail) ingests the
         // container stdout/stderr and parses the JSON automatically.
         'stderr-json' => [
-            'driver'    => 'monolog',
-            'level'     => env('LOG_LEVEL', 'debug'),
-            'handler'   => StreamHandler::class,
-            'with'      => ['stream' => 'php://stderr'],
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'with' => ['stream' => 'php://stderr'],
             'formatter' => JsonFormatter::class,
             'processors' => [PsrLogMessageProcessor::class],
         ],
@@ -76,10 +77,10 @@ return [
         // Use when LOG_STACK=stderr-json,logtail or LOG_STACK=logtail.
         // Requires BETTERSTACK_SOURCE_TOKEN to be set.
         'logtail' => [
-            'driver'  => 'monolog',
-            'level'   => env('LOG_LEVEL', 'info'),
-            'handler' => \Logtail\Monolog\LogtailHandler::class,
-            'with'    => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'info'),
+            'handler' => LogtailHandler::class,
+            'with' => [
                 'source_token' => env('BETTERSTACK_SOURCE_TOKEN', ''),
             ],
         ],
@@ -87,7 +88,7 @@ return [
         // ── Sentry (errors + warnings only; exceptions captured automatically) ─
         'sentry' => [
             'driver' => 'sentry',
-            'level'  => env('LOG_SENTRY_LEVEL', 'warning'),
+            'level' => env('LOG_SENTRY_LEVEL', 'warning'),
             'bubble' => true,
         ],
 

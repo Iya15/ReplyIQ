@@ -43,11 +43,11 @@ class InviteUserService
 
         $invitation = Invitation::create([
             'organization_id' => $org->id,
-            'email'           => $email,
-            'role'            => $role,
-            'token'           => Str::random(64),
-            'invited_by'      => $inviter->id,
-            'expires_at'      => now()->addDays(7),
+            'email' => $email,
+            'role' => $role,
+            'token' => Str::random(64),
+            'invited_by' => $inviter->id,
+            'expires_at' => now()->addDays(7),
         ]);
 
         Notification::route('mail', $email)

@@ -6,6 +6,7 @@ use App\Exceptions\EmbeddingException;
 use Illuminate\Support\Facades\Cache;
 use OpenAI\Contracts\ClientContract;
 use OpenAI\Exceptions\TransporterException;
+use OpenAI\Responses\Embeddings\CreateResponse;
 
 class OpenAiEmbeddingClient implements EmbeddingClient
 {
@@ -27,7 +28,7 @@ class OpenAiEmbeddingClient implements EmbeddingClient
         // lookups for the same phrase skip the OpenAI round-trip.
         // embedBatch() is intentionally NOT cached — ingestion batches are
         // one-shot and caching them would waste Redis memory.
-        $key = 'embed:' . sha1(self::MODEL . $text);
+        $key = 'embed:'.sha1(self::MODEL.$text);
 
         /** @var float[] */
         return Cache::remember($key, self::CACHE_TTL, fn () => $this->embedBatch([$text])[0]);
@@ -62,7 +63,7 @@ class OpenAiEmbeddingClient implements EmbeddingClient
         return self::MODEL;
     }
 
-    private function callWithRetry(array $inputs): \OpenAI\Responses\Embeddings\CreateResponse
+    private function callWithRetry(array $inputs): CreateResponse
     {
         $attempt = 0;
 

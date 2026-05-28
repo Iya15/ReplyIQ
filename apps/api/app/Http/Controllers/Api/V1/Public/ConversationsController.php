@@ -31,24 +31,24 @@ class ConversationsController extends Controller
     public function store(
         StartConversationRequest $request,
         StartConversationService $conversationSvc,
-        WidgetSessionToken       $tokenSvc,
+        WidgetSessionToken $tokenSvc,
     ): JsonResponse {
         /** @var Chatbot $chatbot */
         $chatbot = app('currentChatbot');
 
-        $visitorId    = $request->string('visitor_id')->toString();
+        $visitorId = $request->string('visitor_id')->toString();
         $conversation = $conversationSvc->execute(
-            chatbot:   $chatbot,
+            chatbot: $chatbot,
             visitorId: $visitorId,
             sourceUrl: $request->string('source_url')->value() ?: null,
             userAgent: $request->string('user_agent')->value() ?: null,
-            ip:        $request->ip(),
+            ip: $request->ip(),
         );
 
         $token = $tokenSvc->issue($chatbot->public_id, (string) $conversation->id, $visitorId);
 
         return response()->json([
-            'data'          => ConversationResource::make($conversation),
+            'data' => ConversationResource::make($conversation),
             'session_token' => $token,
         ], Response::HTTP_CREATED);
     }
@@ -66,7 +66,7 @@ class ConversationsController extends Controller
 
         $updates = array_filter([
             'visitor_email' => $request->string('visitor_email')->value() ?: null,
-            'visitor_name'  => $request->string('visitor_name')->value() ?: null,
+            'visitor_name' => $request->string('visitor_name')->value() ?: null,
         ]);
 
         if (! empty($updates)) {
@@ -83,7 +83,7 @@ class ConversationsController extends Controller
      */
     public function sendMessage(
         SendMessageRequest $request,
-        string             $id,
+        string $id,
         SendMessageService $service,
     ): JsonResponse {
         $conversation = $this->resolveConversation($id);
@@ -91,7 +91,7 @@ class ConversationsController extends Controller
         $messages = $service->execute($conversation, $request->string('content')->toString());
 
         return $this->ok([
-            'user_message'      => MessageResource::make($messages['user']),
+            'user_message' => MessageResource::make($messages['user']),
             'assistant_message' => $messages['assistant']
                 ? MessageResource::make($messages['assistant'])
                 : null,

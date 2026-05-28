@@ -20,22 +20,24 @@ class ConversationEscalatedEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public readonly string  $conversationId;
-    public readonly string  $initiatedBy;  // 'user' | 'agent'
+    public readonly string $conversationId;
+
+    public readonly string $initiatedBy;  // 'user' | 'agent'
+
     public readonly ?string $agentName;
 
     public function __construct(Conversation $conversation, string $initiatedBy, ?string $agentName = null)
     {
         $this->conversationId = (string) $conversation->id;
-        $this->initiatedBy    = $initiatedBy;
-        $this->agentName      = $agentName;
+        $this->initiatedBy = $initiatedBy;
+        $this->agentName = $agentName;
     }
 
     /** @return Channel[] */
     public function broadcastOn(): array
     {
         return [
-            new PresenceChannel('chat.' . $this->conversationId),
+            new PresenceChannel('chat.'.$this->conversationId),
         ];
     }
 

@@ -2,6 +2,8 @@
 
 // @requires PostgreSQL with pgvector extension (CI/Docker only — needs chunks table for RAG)
 
+use App\DataObjects\LlmResponse;
+use App\Enums\MessageStatus;
 use App\Events\MessageCompleted;
 use App\Events\MessageTokenStreamed;
 use App\Jobs\GenerateAiReplyJob;
@@ -10,7 +12,10 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\Ai\Contracts\LlmClient;
+use App\Services\Ai\RagPipeline;
 use App\Services\Public\WidgetSessionToken;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -21,9 +26,10 @@ uses(RefreshDatabase::class);
 
 function broadcastChatbot(): array
 {
-    $org     = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $chatbot = Chatbot::factory()->for($org)->create(['status' => 'active']);
     $chatbot->load('settings');
+
     return [$org, $chatbot];
 }
 
@@ -50,16 +56,20 @@ it('broadcasts MessageTokenStreamed events during streaming generation', functio
         ->create(['organization_id' => $org->id]);
 
     app()->bind(
-        \App\Services\Ai\Contracts\LlmClient::class,
-        fn () => new class implements \App\Services\Ai\Contracts\LlmClient {
-            public function chat(array $messages, string $model, int $maxTokens, float $temperature): \App\DataObjects\LlmResponse
+        LlmClient::class,
+        fn () => new class implements LlmClient
+        {
+            public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
             {
-                return new \App\DataObjects\LlmResponse('Hello world', 2);
+                return new LlmResponse('Hello world', 2);
             }
 
-            public function embed(string $text, string $model): array { return array_fill(0, 1536, 0.0); }
+            public function embed(string $text, string $model): array
+            {
+                return array_fill(0, 1536, 0.0);
+            }
 
-            public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+            public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
             {
                 yield 'Hello';
                 yield ' world';
@@ -69,7 +79,7 @@ it('broadcasts MessageTokenStreamed events during streaming generation', functio
     );
 
     (new GenerateAiReplyJob($conversation, $assistantMessage))
-        ->handle(app(\App\Services\Ai\RagPipeline::class));
+        ->handle(app(RagPipeline::class));
 
     Event::assertDispatched(MessageTokenStreamed::class, 3);
 
@@ -98,16 +108,20 @@ it('broadcasts MessageCompleted after the assistant message is persisted', funct
         ->create(['organization_id' => $org->id]);
 
     app()->bind(
-        \App\Services\Ai\Contracts\LlmClient::class,
-        fn () => new class implements \App\Services\Ai\Contracts\LlmClient {
-            public function chat(array $messages, string $model, int $maxTokens, float $temperature): \App\DataObjects\LlmResponse
+        LlmClient::class,
+        fn () => new class implements LlmClient
+        {
+            public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
             {
-                return new \App\DataObjects\LlmResponse('Hello world', 2);
+                return new LlmResponse('Hello world', 2);
             }
 
-            public function embed(string $text, string $model): array { return array_fill(0, 1536, 0.0); }
+            public function embed(string $text, string $model): array
+            {
+                return array_fill(0, 1536, 0.0);
+            }
 
-            public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+            public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
             {
                 yield 'Hello world';
             }
@@ -115,7 +129,7 @@ it('broadcasts MessageCompleted after the assistant message is persisted', funct
     );
 
     (new GenerateAiReplyJob($conversation, $assistantMessage))
-        ->handle(app(\App\Services\Ai\RagPipeline::class));
+        ->handle(app(RagPipeline::class));
 
     Event::assertDispatched(MessageCompleted::class, 1);
 
@@ -127,13 +141,13 @@ it('broadcasts MessageCompleted after the assistant message is persisted', funct
 
 it('MessageCompleted carries the full content and broadcasts on the correct channel', function () {
     $conversation = Conversation::factory()->create();
-    $message      = Message::factory()
+    $message = Message::factory()
         ->for($conversation)
         ->assistant()
         ->create([
             'organization_id' => $conversation->organization_id,
-            'content'         => 'Final answer.',
-            'status'          => \App\Enums\MessageStatus::Complete,
+            'content' => 'Final answer.',
+            'status' => MessageStatus::Complete,
         ]);
 
     $event = new MessageCompleted($message);
@@ -143,16 +157,16 @@ it('MessageCompleted carries the full content and broadcasts on the correct chan
         ->and($event->content)->toBe('Final answer.')
         ->and($event->status)->toBe('complete')
         ->and($event->broadcastAs())->toBe('message.completed')
-        ->and($event->broadcastOn()[0])->toBeInstanceOf(\Illuminate\Broadcasting\PresenceChannel::class);
+        ->and($event->broadcastOn()[0])->toBeInstanceOf(PresenceChannel::class);
 });
 
 it('MessageTokenStreamed broadcasts on the correct channel with the right event name', function () {
     $convId = (string) Str::uuid();
-    $msgId  = (string) Str::uuid();
-    $event  = new MessageTokenStreamed($convId, $msgId, 'tok');
+    $msgId = (string) Str::uuid();
+    $event = new MessageTokenStreamed($convId, $msgId, 'tok');
 
     expect($event->broadcastAs())->toBe('message.token')
-        ->and($event->broadcastOn()[0])->toBeInstanceOf(\Illuminate\Broadcasting\PresenceChannel::class)
+        ->and($event->broadcastOn()[0])->toBeInstanceOf(PresenceChannel::class)
         ->and($event->token)->toBe('tok');
 });
 
@@ -160,21 +174,21 @@ it('MessageTokenStreamed broadcasts on the correct channel with the right event 
 
 it('returns a signed presence auth response for a valid session token', function () {
     [, $chatbot] = broadcastChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
 
-    $token    = broadcastToken($chatbot, (string) $conversation->id, $visitorId);
+    $token = broadcastToken($chatbot, (string) $conversation->id, $visitorId);
     $socketId = '123.456';
-    $channel  = 'presence-chat.' . $conversation->id;
+    $channel = 'presence-chat.'.$conversation->id;
 
     $response = $this->withHeaders(['Authorization' => "Bearer {$token}"])
         ->postJson('/api/v1/public/broadcasting/auth', [
-            'socket_id'    => $socketId,
+            'socket_id' => $socketId,
             'channel_name' => $channel,
         ]);
 
@@ -192,17 +206,17 @@ it('returns a signed presence auth response for a valid session token', function
 
 it('returns 403 when the channel name does not match the conversation in the token', function () {
     [, $chatbot] = broadcastChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $convA = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
     $convB = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
 
     // Token is scoped to convA but request asks for convB's channel.
@@ -210,34 +224,34 @@ it('returns 403 when the channel name does not match the conversation in the tok
 
     $this->withHeaders(['Authorization' => "Bearer {$token}"])
         ->postJson('/api/v1/public/broadcasting/auth', [
-            'socket_id'    => '123.456',
-            'channel_name' => 'presence-chat.' . $convB->id,
+            'socket_id' => '123.456',
+            'channel_name' => 'presence-chat.'.$convB->id,
         ])->assertForbidden();
 });
 
 it('returns 401 when no Bearer token is provided for broadcasting auth', function () {
     $this->postJson('/api/v1/public/broadcasting/auth', [
-        'socket_id'    => '123.456',
-        'channel_name' => 'presence-chat.' . Str::uuid(),
+        'socket_id' => '123.456',
+        'channel_name' => 'presence-chat.'.Str::uuid(),
     ])->assertUnauthorized()
-      ->assertJsonPath('error.code', 'missing_token');
+        ->assertJsonPath('error.code', 'missing_token');
 });
 
 it('rejects a non-presence channel name', function () {
     [, $chatbot] = broadcastChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
 
     $token = broadcastToken($chatbot, (string) $conversation->id, $visitorId);
 
     $this->withHeaders(['Authorization' => "Bearer {$token}"])
         ->postJson('/api/v1/public/broadcasting/auth', [
-            'socket_id'    => '123.456',
+            'socket_id' => '123.456',
             'channel_name' => 'private-chat.something', // not presence-chat.*
         ])->assertUnprocessable();
 });
@@ -245,44 +259,44 @@ it('rejects a non-presence channel name', function () {
 // ── Dashboard presence channel auth (channels.php) ────────────────────────────
 
 it('allows a dashboard user who is a member of the owning organization to join the channel', function () {
-    $org  = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $user = User::factory()->create();
     $user->organizations()->attach($org->id, ['role' => 'admin']);
 
-    $chatbot      = Chatbot::factory()->for($org)->create();
+    $chatbot = Chatbot::factory()->for($org)->create();
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $org->id,
-        'visitor_id'      => 'visitor-123',
+        'visitor_id' => 'visitor-123',
     ]);
 
     $token = $user->createToken('test')->plainTextToken;
 
     $this->withHeaders(['Authorization' => "Bearer {$token}"])
         ->postJson('/broadcasting/auth', [
-            'socket_id'    => '111.222',
-            'channel_name' => 'presence-chat.' . $conversation->id,
+            'socket_id' => '111.222',
+            'channel_name' => 'presence-chat.'.$conversation->id,
         ])->assertOk();
 });
 
 it('denies a dashboard user who does not belong to the owning organization', function () {
-    $org      = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $otherOrg = Organization::factory()->create();
-    $user     = User::factory()->create();
+    $user = User::factory()->create();
     $user->organizations()->attach($otherOrg->id, ['role' => 'member']);
 
-    $chatbot      = Chatbot::factory()->for($org)->create();
+    $chatbot = Chatbot::factory()->for($org)->create();
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $org->id,
-        'visitor_id'      => 'visitor-456',
+        'visitor_id' => 'visitor-456',
     ]);
 
     $token = $user->createToken('test')->plainTextToken;
 
     $this->withHeaders(['Authorization' => "Bearer {$token}"])
         ->postJson('/broadcasting/auth', [
-            'socket_id'    => '111.222',
-            'channel_name' => 'presence-chat.' . $conversation->id,
+            'socket_id' => '111.222',
+            'channel_name' => 'presence-chat.'.$conversation->id,
         ])->assertForbidden();
 });

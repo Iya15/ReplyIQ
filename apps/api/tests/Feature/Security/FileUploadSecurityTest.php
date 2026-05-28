@@ -17,11 +17,12 @@ uses(RefreshDatabase::class);
 
 function uploadOrg(): array
 {
-    $org     = Organization::factory()->create();
-    $user    = User::factory()->create();
+    $org = Organization::factory()->create();
+    $user = User::factory()->create();
     Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $user->id, 'role' => 'owner']);
     $chatbot = Chatbot::factory()->for($org)->create(['status' => 'active']);
-    $token   = $user->createToken('test')->plainTextToken;
+    $token = $user->createToken('test')->plainTextToken;
+
     return compact('org', 'chatbot', 'token');
 }
 

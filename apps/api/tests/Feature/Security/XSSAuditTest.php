@@ -34,12 +34,13 @@ beforeEach(fn () => Queue::fake());
 
 function xssChatbot(): array
 {
-    $org     = Organization::factory()->create();
-    $user    = User::factory()->create();
+    $org = Organization::factory()->create();
+    $user = User::factory()->create();
     Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $user->id, 'role' => 'owner']);
     $chatbot = Chatbot::factory()->for($org)->create(['status' => 'active']);
     $chatbot->load('settings');
     $token = $user->createToken('test')->plainTextToken;
+
     return compact('org', 'chatbot', 'user', 'token');
 }
 
@@ -58,11 +59,11 @@ it('all API responses have Content-Type: application/json', function () {
 it('XSS payload in a user message is stored and returned as a plain string', function () {
     ['chatbot' => $chatbot, 'token' => $token] = xssChatbot();
 
-    $tokenSvc  = app(WidgetSessionToken::class);
+    $tokenSvc = app(WidgetSessionToken::class);
     $visitorId = (string) Str::uuid();
-    $conv      = $chatbot->conversations()->create([
+    $conv = $chatbot->conversations()->create([
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
     $jwt = $tokenSvc->issue($chatbot->public_id, (string) $conv->id, $visitorId);
 
@@ -80,11 +81,11 @@ it('XSS payload in a user message is stored and returned as a plain string', fun
 it('img onerror payload in a message is stored verbatim', function () {
     ['chatbot' => $chatbot, 'token' => $token] = xssChatbot();
 
-    $tokenSvc  = app(WidgetSessionToken::class);
+    $tokenSvc = app(WidgetSessionToken::class);
     $visitorId = (string) Str::uuid();
-    $conv      = $chatbot->conversations()->create([
+    $conv = $chatbot->conversations()->create([
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
     $jwt = $tokenSvc->issue($chatbot->public_id, (string) $conv->id, $visitorId);
 

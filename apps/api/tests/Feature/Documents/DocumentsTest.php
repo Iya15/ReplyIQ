@@ -1,7 +1,7 @@
 <?php
 
-use App\Enums\DocumentSourceType;
 use App\Enums\DocumentStatus;
+use App\Jobs\ProcessDocumentJob;
 use App\Models\Chatbot;
 use App\Models\Chunk;
 use App\Models\Document;
@@ -152,7 +152,7 @@ it('dispatches ProcessDocumentJob after a successful file upload', function () {
         )
         ->assertStatus(202);
 
-    Queue::assertPushed(\App\Jobs\ProcessDocumentJob::class);
+    Queue::assertPushed(ProcessDocumentJob::class);
 });
 
 // ── Store text ────────────────────────────────────────────────────────────────
@@ -231,7 +231,7 @@ it('reprocess resets document to pending and dispatches job', function () {
         ->assertStatus(202)
         ->assertJsonPath('data.status', 'pending');
 
-    Queue::assertPushed(\App\Jobs\ProcessDocumentJob::class);
+    Queue::assertPushed(ProcessDocumentJob::class);
 });
 
 // ── Cross-tenant isolation ────────────────────────────────────────────────────

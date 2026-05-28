@@ -26,9 +26,9 @@ class ExtractorFactory
     {
         if (self::$extractors === []) {
             self::$extractors = [
-                new PdfExtractor(),
-                new DocxExtractor(),
-                new TxtExtractor(),
+                new PdfExtractor,
+                new DocxExtractor,
+                new TxtExtractor,
             ];
         }
 

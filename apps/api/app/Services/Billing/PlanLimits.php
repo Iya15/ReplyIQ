@@ -31,13 +31,13 @@ class PlanLimits
     public function currentUsage(Organization $org, string $metric): int
     {
         return match ($metric) {
-            'chatbots'           => $org->chatbots()->count(),
-            'documents'          => Document::withoutGlobalScopes()
+            'chatbots' => $org->chatbots()->count(),
+            'documents' => Document::withoutGlobalScopes()
                 ->where('organization_id', $org->id)
                 ->count(),
-            'team_size'          => Membership::where('organization_id', $org->id)->count(),
+            'team_size' => Membership::where('organization_id', $org->id)->count(),
             'messages_per_month' => $this->monthlyMessages($org),
-            default              => 0,
+            default => 0,
         };
     }
 
@@ -63,7 +63,8 @@ class PlanLimits
     private function monthlyMessages(Organization $org): int
     {
         try {
-            $key = "usage:messages:{$org->id}:" . now()->format('Y-m');
+            $key = "usage:messages:{$org->id}:".now()->format('Y-m');
+
             return (int) (Redis::get($key) ?? 0);
         } catch (\Throwable) {
             return 0;

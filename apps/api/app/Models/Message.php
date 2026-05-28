@@ -9,12 +9,13 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
- * @property MessageRole   $role
+ * @property MessageRole $role
  * @property MessageStatus $status
- * @property array<mixed>  $sources
- * @property \Illuminate\Support\Carbon $created_at
+ * @property array<mixed> $sources
+ * @property Carbon $created_at
  */
 class Message extends Model
 {
@@ -41,9 +42,9 @@ class Message extends Model
     protected function casts(): array
     {
         return [
-            'role'       => MessageRole::class,
-            'status'     => MessageStatus::class,
-            'sources'    => 'array',
+            'role' => MessageRole::class,
+            'status' => MessageStatus::class,
+            'sources' => 'array',
             'confidence' => 'float',
             'created_at' => 'datetime',
         ];

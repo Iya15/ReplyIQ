@@ -19,9 +19,9 @@ class OpenAiLlmClient implements LlmClient
         $start = hrtime(true);
 
         $response = $this->client->chat()->create([
-            'model'       => $model,
-            'messages'    => $messages,
-            'max_tokens'  => $maxTokens,
+            'model' => $model,
+            'messages' => $messages,
+            'max_tokens' => $maxTokens,
             'temperature' => $temperature,
         ]);
 
@@ -29,11 +29,11 @@ class OpenAiLlmClient implements LlmClient
         $choice = $response->choices[0];
 
         return new LlmResponse(
-            content:       $choice->message->content ?? '',
-            tokens_used:   $response->usage->totalTokens,
-            latency_ms:    $latencyMs,
+            content: $choice->message->content ?? '',
+            tokens_used: $response->usage->totalTokens,
+            latency_ms: $latencyMs,
             finish_reason: $choice->finishReason ?? 'stop',
-            model:         $response->model,
+            model: $response->model,
         );
     }
 
@@ -44,9 +44,9 @@ class OpenAiLlmClient implements LlmClient
         float $temperature,
     ): \Generator {
         $stream = $this->client->chat()->createStreamed([
-            'model'       => $model,
-            'messages'    => $messages,
-            'max_tokens'  => $maxTokens,
+            'model' => $model,
+            'messages' => $messages,
+            'max_tokens' => $maxTokens,
             'temperature' => $temperature,
         ]);
 

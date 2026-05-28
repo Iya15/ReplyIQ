@@ -30,20 +30,21 @@ class SendMessageService
         $userMessage = Message::create([
             'organization_id' => $conversation->organization_id,
             'conversation_id' => $conversation->id,
-            'role'            => MessageRole::User,
-            'content'         => $content,
-            'status'          => MessageStatus::Complete,
+            'role' => MessageRole::User,
+            'content' => $content,
+            'status' => MessageStatus::Complete,
         ]);
 
         // When a human agent has taken over, don't create an AI placeholder.
         if ($conversation->status === ConversationStatus::Escalated) {
             $this->analytics->record(
-                eventType:      'message_sent',
+                eventType: 'message_sent',
                 organizationId: (string) $conversation->organization_id,
-                chatbotId:      (string) $conversation->chatbot_id,
+                chatbotId: (string) $conversation->chatbot_id,
                 conversationId: (string) $conversation->id,
-                context:        ['content_preview' => mb_substr($content, 0, 200)],
+                context: ['content_preview' => mb_substr($content, 0, 200)],
             );
+
             return ['user' => $userMessage, 'assistant' => null];
         }
 
@@ -51,9 +52,9 @@ class SendMessageService
         $assistantMessage = Message::create([
             'organization_id' => $conversation->organization_id,
             'conversation_id' => $conversation->id,
-            'role'            => MessageRole::Assistant,
-            'content'         => '',
-            'status'          => MessageStatus::Pending,
+            'role' => MessageRole::Assistant,
+            'content' => '',
+            'status' => MessageStatus::Pending,
         ]);
 
         // Dispatch the AI reply job to the 'replies' queue.
@@ -62,7 +63,7 @@ class SendMessageService
         // Increment the monthly message counter for plan-limit checks.
         // Fire-and-forget — Redis errors must not fail the message send.
         try {
-            $key = 'usage:messages:' . $conversation->organization_id . ':' . now()->format('Y-m');
+            $key = 'usage:messages:'.$conversation->organization_id.':'.now()->format('Y-m');
             Redis::incr($key);
             // TTL: end of current month + 7-day grace period.
             Redis::expireat($key, (int) now()->endOfMonth()->addDays(7)->timestamp);
@@ -71,9 +72,9 @@ class SendMessageService
         }
 
         $this->analytics->record(
-            eventType:      'message_sent',
+            eventType: 'message_sent',
             organizationId: (string) $conversation->organization_id,
-            chatbotId:      (string) $conversation->chatbot_id,
+            chatbotId: (string) $conversation->chatbot_id,
             conversationId: (string) $conversation->id,
             context: [
                 'content_preview' => mb_substr($content, 0, 200),
@@ -81,7 +82,7 @@ class SendMessageService
         );
 
         return [
-            'user'      => $userMessage,
+            'user' => $userMessage,
             'assistant' => $assistantMessage,
         ];
     }

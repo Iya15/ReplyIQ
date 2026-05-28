@@ -16,14 +16,14 @@ class MessageFactory extends Factory
     {
         return [
             'conversation_id' => Conversation::factory(),
-            'role'            => MessageRole::User->value,
-            'content'         => $this->faker->sentence(),
-            'status'          => MessageStatus::Complete->value,
-            'sources'         => [],
-            'confidence'      => null,
-            'tokens_used'     => null,
-            'latency_ms'      => null,
-            'feedback'        => null,
+            'role' => MessageRole::User->value,
+            'content' => $this->faker->sentence(),
+            'status' => MessageStatus::Complete->value,
+            'sources' => [],
+            'confidence' => null,
+            'tokens_used' => null,
+            'latency_ms' => null,
+            'feedback' => null,
         ];
     }
 
@@ -35,10 +35,10 @@ class MessageFactory extends Factory
     public function assistant(): static
     {
         return $this->state([
-            'role'       => MessageRole::Assistant->value,
-            'sources'    => [],
+            'role' => MessageRole::Assistant->value,
+            'sources' => [],
             'confidence' => $this->faker->randomFloat(2, 0.5, 1.0),
-            'tokens_used'=> $this->faker->numberBetween(50, 500),
+            'tokens_used' => $this->faker->numberBetween(50, 500),
             'latency_ms' => $this->faker->numberBetween(200, 1500),
         ]);
     }
@@ -46,16 +46,16 @@ class MessageFactory extends Factory
     public function pending(): static
     {
         return $this->state([
-            'role'    => MessageRole::Assistant->value,
+            'role' => MessageRole::Assistant->value,
             'content' => '',
-            'status'  => MessageStatus::Pending->value,
+            'status' => MessageStatus::Pending->value,
         ]);
     }
 
     public function failed(): static
     {
         return $this->state([
-            'role'   => MessageRole::Assistant->value,
+            'role' => MessageRole::Assistant->value,
             'status' => MessageStatus::Failed->value,
         ]);
     }

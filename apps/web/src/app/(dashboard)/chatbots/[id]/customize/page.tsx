@@ -359,7 +359,7 @@ export default function CustomizePage({ params }: PageProps) {
                           onChange={(e) => field.onChange(e.target.checked)}
                         />
                       </FormControl>
-                      <FormLabel className="!mt-0 cursor-pointer">Show "Powered by ReplyIQ" branding</FormLabel>
+                      <FormLabel className="!mt-0 cursor-pointer">Show &ldquo;Powered by ReplyIQ&rdquo; branding</FormLabel>
                     </FormItem>
                   )}
                 />

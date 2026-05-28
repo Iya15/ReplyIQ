@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Chatbot;
-use App\Services\Ai\PromptBuilder;
 use App\Services\Ai\Contracts\LlmClient;
+use App\Services\Ai\PromptBuilder;
 use App\Services\Embedding\EmbeddingClient;
 use App\Services\Knowledge\RetrievalService;
 use Illuminate\Console\Command;
@@ -44,13 +44,13 @@ class RagAskCommand extends Command
         $this->line('');
 
         // ── Step 1: Embed (warms cache so retrieve step shows DB-only time) ────
-        $t0        = hrtime(true);
+        $t0 = hrtime(true);
         $embedder->embed($query);
-        $embedMs   = (int) ((hrtime(true) - $t0) / 1_000_000);
+        $embedMs = (int) ((hrtime(true) - $t0) / 1_000_000);
 
         // ── Step 2: Retrieve ──────────────────────────────────────────────────
-        $t1         = hrtime(true);
-        $chunks     = $retrieval->retrieve($chatbot, $query);
+        $t1 = hrtime(true);
+        $chunks = $retrieval->retrieve($chatbot, $query);
         $retrieveMs = (int) ((hrtime(true) - $t1) / 1_000_000);
 
         // ── Retrieved chunks ──────────────────────────────────────────────────
@@ -75,11 +75,11 @@ class RagAskCommand extends Command
 
         $chunkRows = $chunks->values()->map(fn ($c, $i) => [
             $i + 1,
-            mb_substr($c->id, 0, 8) . '…',
-            mb_substr($c->document_id, 0, 8) . '…',
+            mb_substr($c->id, 0, 8).'…',
+            mb_substr($c->document_id, 0, 8).'…',
             number_format($c->similarity, 4),
             mb_substr(str_replace(["\n", "\r"], ' ', $c->content), 0, 60)
-                . (mb_strlen($c->content) > 60 ? '…' : ''),
+                .(mb_strlen($c->content) > 60 ? '…' : ''),
         ])->all();
 
         $this->table(['#', 'Chunk ID', 'Doc ID', 'Score', 'Preview'], $chunkRows);
@@ -97,13 +97,13 @@ class RagAskCommand extends Command
         }
 
         // ── Step 4: LLM ───────────────────────────────────────────────────────
-        $model       = $chatbot->settings?->model       ?? 'gpt-4o-mini';
-        $maxTokens   = $chatbot->settings?->max_tokens  ?? 800;
+        $model = $chatbot->settings?->model ?? 'gpt-4o-mini';
+        $maxTokens = $chatbot->settings?->max_tokens ?? 800;
         $temperature = $chatbot->settings?->temperature ?? 0.3;
 
-        $t2          = hrtime(true);
+        $t2 = hrtime(true);
         $llmResponse = $llm->chat($messages, $model, $maxTokens, $temperature);
-        $llmMs       = (int) ((hrtime(true) - $t2) / 1_000_000);
+        $llmMs = (int) ((hrtime(true) - $t2) / 1_000_000);
 
         $this->comment('RESPONSE');
         $this->line($llmResponse->content);
@@ -131,7 +131,7 @@ class RagAskCommand extends Command
         }
 
         $total = $embedMs + $retrieveMs + ($llmMs ?? 0);
-        $rows[] = new TableSeparator();
+        $rows[] = new TableSeparator;
         $rows[] = ['<options=bold>Total</>', "<options=bold>{$total}</>"];
 
         $table->setRows($rows);

@@ -15,7 +15,7 @@ class PdfExtractor implements TextExtractor
 
     public function extract(string $filePath): ExtractedDocument
     {
-        $parser = new Parser();
+        $parser = new Parser;
         $pdf = $parser->parseFile($filePath);
 
         $details = $pdf->getDetails();

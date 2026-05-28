@@ -6,15 +6,16 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
- * @property string                       $id
- * @property string                       $organization_id
- * @property string|null                  $chatbot_id
- * @property string|null                  $conversation_id
- * @property string                       $event_type
- * @property array<string, mixed>         $context
- * @property \Illuminate\Support\Carbon   $occurred_at
+ * @property string $id
+ * @property string $organization_id
+ * @property string|null $chatbot_id
+ * @property string|null $conversation_id
+ * @property string $event_type
+ * @property array<string, mixed> $context
+ * @property Carbon $occurred_at
  */
 class AnalyticsEvent extends Model
 {
@@ -33,7 +34,7 @@ class AnalyticsEvent extends Model
     protected function casts(): array
     {
         return [
-            'context'     => 'array',
+            'context' => 'array',
             'occurred_at' => 'datetime',
         ];
     }

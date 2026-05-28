@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class DataDeletionController extends Controller
 {
@@ -29,7 +28,7 @@ class DataDeletionController extends Controller
 
         Log::info('GDPR data deletion request received', [
             'email' => $email,
-            'ip'    => $r->ip(),
+            'ip' => $r->ip(),
         ]);
 
         // If the user exists, notify privacy@ so the team can process it.
@@ -39,7 +38,7 @@ class DataDeletionController extends Controller
             // For MVP: log and notify — the team processes manually within 30 days.
             Log::warning('GDPR data deletion — user account found', [
                 'user_id' => $user->id,
-                'email'   => $email,
+                'email' => $email,
             ]);
 
             // Optionally send confirmation to the user (generic — doesn't reveal account existence)

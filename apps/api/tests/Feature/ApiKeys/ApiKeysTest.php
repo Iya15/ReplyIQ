@@ -7,6 +7,7 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
@@ -15,15 +16,16 @@ uses(RefreshDatabase::class);
 
 function makeOwner(): array
 {
-    $org  = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $user = User::factory()->create();
     Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $user->id, 'role' => 'owner']);
+
     return compact('org', 'user');
 }
 
 function ownerHeaders(User $user): array
 {
-    return ['Authorization' => 'Bearer ' . $user->createToken('test')->plainTextToken];
+    return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
 }
 
 // ── GET /api/v1/api-keys ──────────────────────────────────────────────────────
@@ -116,16 +118,16 @@ it('cannot revoke a key from another organization', function () {
 it('api-key middleware resolves the organization from a valid key', function () {
     ['org' => $org] = makeOwner();
 
-    $plain = 'rk_live_' . Str::random(32);
+    $plain = 'rk_live_'.Str::random(32);
     ApiKey::factory()->create([
         'organization_id' => $org->id,
-        'key_hash'        => hash('sha256', $plain),
-        'prefix'          => substr($plain, 0, 12),
+        'key_hash' => hash('sha256', $plain),
+        'prefix' => substr($plain, 0, 12),
     ]);
 
     // Hit a protected external endpoint (stub route registered in test).
     // Use the actual middleware by adding a test route on-the-fly.
-    app(\Illuminate\Routing\Router::class)->middleware(['api', 'api-key'])
+    app(Router::class)->middleware(['api', 'api-key'])
         ->get('/_test/api-key-probe', fn () => response()->json([
             'org' => app('currentOrganization')?->id,
         ]));
@@ -137,7 +139,7 @@ it('api-key middleware resolves the organization from a valid key', function () 
 });
 
 it('api-key middleware rejects an invalid key', function () {
-    $this->withHeader('Authorization', 'Bearer rk_live_' . Str::random(32))
+    $this->withHeader('Authorization', 'Bearer rk_live_'.Str::random(32))
         ->getJson('/_test/api-key-probe')
         ->assertUnauthorized();
 });

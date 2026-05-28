@@ -2,14 +2,14 @@
 
 namespace App\Jobs;
 
+use App\Models\AnalyticsEvent;
 use App\Models\Organization;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable as QueueableTrait;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Carbon;
 
 /**
  * Fetches the previous day's OpenAI API usage and logs a structured report.
@@ -33,9 +33,9 @@ class DailyOpenAiCostReportJob implements ShouldQueue
 
     // ── Token cost per million (USD) — update when OpenAI changes pricing ────
     private const COSTS_PER_MILLION = [
-        'gpt-4o-mini'            => ['input' => 0.15,  'output' => 0.60],
-        'gpt-4o'                 => ['input' => 2.50,  'output' => 10.00],
-        'gpt-4-turbo'            => ['input' => 10.00, 'output' => 30.00],
+        'gpt-4o-mini' => ['input' => 0.15,  'output' => 0.60],
+        'gpt-4o' => ['input' => 2.50,  'output' => 10.00],
+        'gpt-4-turbo' => ['input' => 10.00, 'output' => 30.00],
         'text-embedding-3-small' => ['input' => 0.02,  'output' => 0.00],
         'text-embedding-3-large' => ['input' => 0.13,  'output' => 0.00],
     ];
@@ -46,6 +46,7 @@ class DailyOpenAiCostReportJob implements ShouldQueue
 
         if (! $apiKey) {
             Log::warning('DailyOpenAiCostReportJob: OPENAI_API_KEY not configured, skipping.');
+
             return;
         }
 
@@ -53,12 +54,13 @@ class DailyOpenAiCostReportJob implements ShouldQueue
 
         $response = Http::timeout(30)
             ->withToken($apiKey)
-            ->get("https://api.openai.com/v1/usage", ['date' => $yesterday]);
+            ->get('https://api.openai.com/v1/usage', ['date' => $yesterday]);
 
         if (! $response->ok()) {
-            Log::warning('DailyOpenAiCostReportJob: usage API returned ' . $response->status(), [
+            Log::warning('DailyOpenAiCostReportJob: usage API returned '.$response->status(), [
                 'body' => $response->body(),
             ]);
+
             return;
         }
 
@@ -74,28 +76,28 @@ class DailyOpenAiCostReportJob implements ShouldQueue
 
         foreach ($data as $entry) {
             /** @var array<string, mixed> $entry */
-            $model   = (string) ($entry['model']                    ?? 'unknown');
-            $input   = (int)    ($entry['n_context_tokens_total']   ?? 0);
-            $output  = (int)    ($entry['n_generated_tokens_total'] ?? 0);
-            $costs   = self::COSTS_PER_MILLION[$model] ?? ['input' => 0, 'output' => 0];
-            $cost    = ($input / 1_000_000) * $costs['input'] + ($output / 1_000_000) * $costs['output'];
+            $model = (string) ($entry['model'] ?? 'unknown');
+            $input = (int) ($entry['n_context_tokens_total'] ?? 0);
+            $output = (int) ($entry['n_generated_tokens_total'] ?? 0);
+            $costs = self::COSTS_PER_MILLION[$model] ?? ['input' => 0, 'output' => 0];
+            $cost = ($input / 1_000_000) * $costs['input'] + ($output / 1_000_000) * $costs['output'];
 
             $byModel[$model] ??= ['input_tokens' => 0, 'output_tokens' => 0, 'cost_usd' => 0.0];
-            $byModel[$model]['input_tokens']  += $input;
+            $byModel[$model]['input_tokens'] += $input;
             $byModel[$model]['output_tokens'] += $output;
-            $byModel[$model]['cost_usd']       += $cost;
-            $totalCost                         += $cost;
+            $byModel[$model]['cost_usd'] += $cost;
+            $totalCost += $cost;
         }
 
-        $totalInputTokens  = array_sum(array_column($byModel, 'input_tokens'));
+        $totalInputTokens = array_sum(array_column($byModel, 'input_tokens'));
         $totalOutputTokens = array_sum(array_column($byModel, 'output_tokens'));
 
         Log::info('OpenAI daily usage report', [
-            'date'                => $yesterday,
-            'total_cost_usd'      => round($totalCost, 4),
-            'total_input_tokens'  => $totalInputTokens,
+            'date' => $yesterday,
+            'total_cost_usd' => round($totalCost, 4),
+            'total_input_tokens' => $totalInputTokens,
             'total_output_tokens' => $totalOutputTokens,
-            'by_model'            => $byModel,
+            'by_model' => $byModel,
         ]);
 
         // ── Per-organization usage (via analytics_events context) ────────────
@@ -111,9 +113,9 @@ class DailyOpenAiCostReportJob implements ShouldQueue
         // This is an approximation of per-org LLM cost (exact costs require
         // per-request token tracking, which is stored in messages.tokens_used).
         $start = Carbon::parse($date)->startOfDay();
-        $end   = Carbon::parse($date)->endOfDay();
+        $end = Carbon::parse($date)->endOfDay();
 
-        $perOrg = \App\Models\AnalyticsEvent::withoutGlobalScopes()
+        $perOrg = AnalyticsEvent::withoutGlobalScopes()
             ->where('event_type', 'message_replied')
             ->whereBetween('occurred_at', [$start, $end])
             ->selectRaw('organization_id, COUNT(*) as reply_count, AVG((context->>\'tokens_used\')::float) as avg_tokens')
@@ -122,28 +124,28 @@ class DailyOpenAiCostReportJob implements ShouldQueue
 
         foreach ($perOrg as $row) {
             /** @var array<string, mixed> $raw */
-            $raw        = $row->toArray();
-            $orgId      = (string) ($raw['organization_id'] ?? '');
-            $replyCount = (int)    ($raw['reply_count']     ?? 0);
-            $avgTokens  = (float)  ($raw['avg_tokens']      ?? 0.0);
+            $raw = $row->toArray();
+            $orgId = (string) ($raw['organization_id'] ?? '');
+            $replyCount = (int) ($raw['reply_count'] ?? 0);
+            $avgTokens = (float) ($raw['avg_tokens'] ?? 0.0);
 
             $org = Organization::withoutGlobalScopes()->find($orgId);
             Log::info('OpenAI per-org usage', [
-                'date'          => $date,
-                'organization'  => $org?->name ?? $orgId,
-                'plan'          => $org?->plan ?? 'unknown',
-                'reply_count'   => $replyCount,
-                'avg_tokens'    => round($avgTokens, 1),
-                'est_tokens'    => $replyCount * (int) round($avgTokens),
+                'date' => $date,
+                'organization' => $org?->name ?? $orgId,
+                'plan' => $org?->plan ?? 'unknown',
+                'reply_count' => $replyCount,
+                'avg_tokens' => round($avgTokens, 1),
+                'est_tokens' => $replyCount * (int) round($avgTokens),
             ]);
         }
     }
 
     private function notifySlack(
         string $date,
-        float  $totalCost,
-        int    $inputTokens,
-        int    $outputTokens,
+        float $totalCost,
+        int $inputTokens,
+        int $outputTokens,
     ): void {
         $webhookUrl = config('services.slack.cost_webhook_url');
         if (! $webhookUrl) {
@@ -152,8 +154,8 @@ class DailyOpenAiCostReportJob implements ShouldQueue
 
         Http::post((string) $webhookUrl, [
             'text' => sprintf(
-                ':bar_chart: *OpenAI usage — %s*' . "\n" .
-                'Total cost: *$%s*' . "\n" .
+                ':bar_chart: *OpenAI usage — %s*'."\n".
+                'Total cost: *$%s*'."\n".
                 'Tokens: %s in / %s out',
                 $date,
                 number_format($totalCost, 4),

@@ -3,6 +3,7 @@
 namespace App\Services\Embedding;
 
 use Illuminate\Contracts\Foundation\Application;
+use OpenAI\Contracts\ClientContract;
 
 class EmbeddingClientFactory
 {
@@ -14,6 +15,6 @@ class EmbeddingClientFactory
             );
         }
 
-        return new OpenAiEmbeddingClient($app->make(\OpenAI\Contracts\ClientContract::class));
+        return new OpenAiEmbeddingClient($app->make(ClientContract::class));
     }
 }

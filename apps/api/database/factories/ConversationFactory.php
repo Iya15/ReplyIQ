@@ -18,13 +18,13 @@ class ConversationFactory extends Factory
         $chatbot = Chatbot::factory();
 
         return [
-            'chatbot_id'  => $chatbot,
-            'visitor_id'  => (string) Str::uuid(),
-            'source_url'  => $this->faker->optional(0.6)->url(),
-            'user_agent'  => $this->faker->optional(0.8)->userAgent(),
-            'ip_address'  => $this->faker->optional(0.7)->ipv4(),
-            'country'     => $this->faker->optional(0.7)->countryCode(),
-            'status'      => ConversationStatus::Active->value,
+            'chatbot_id' => $chatbot,
+            'visitor_id' => (string) Str::uuid(),
+            'source_url' => $this->faker->optional(0.6)->url(),
+            'user_agent' => $this->faker->optional(0.8)->userAgent(),
+            'ip_address' => $this->faker->optional(0.7)->ipv4(),
+            'country' => $this->faker->optional(0.7)->countryCode(),
+            'status' => ConversationStatus::Active->value,
             'resolved_at' => null,
         ];
     }
@@ -34,14 +34,14 @@ class ConversationFactory extends Factory
     {
         return $this->state([
             'organization_id' => $org->id,
-            'chatbot_id'      => Chatbot::factory()->for($org),
+            'chatbot_id' => Chatbot::factory()->for($org),
         ]);
     }
 
     public function resolved(): static
     {
         return $this->state([
-            'status'      => ConversationStatus::Resolved->value,
+            'status' => ConversationStatus::Resolved->value,
             'resolved_at' => now(),
         ]);
     }

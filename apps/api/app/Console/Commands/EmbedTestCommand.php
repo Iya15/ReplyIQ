@@ -17,7 +17,7 @@ class EmbedTestCommand extends Command
         $embedding = $client->embed($text);
 
         $preview = array_slice($embedding, 0, 8);
-        $previewStr = implode(', ', array_map(fn(float $v) => number_format($v, 6), $preview));
+        $previewStr = implode(', ', array_map(fn (float $v) => number_format($v, 6), $preview));
 
         $this->info("Model:     {$client->model()}");
         $this->info("Dimension: {$client->dimension()}");

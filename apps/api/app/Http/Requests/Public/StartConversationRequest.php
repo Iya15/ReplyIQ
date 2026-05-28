@@ -14,7 +14,7 @@ class StartConversationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'public_id'  => ['required', 'string'],
+            'public_id' => ['required', 'string'],
             'visitor_id' => ['required', 'string', 'max:64'],
             'source_url' => ['nullable', 'url', 'max:2048'],
             'user_agent' => ['nullable', 'string', 'max:500'],

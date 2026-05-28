@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 class RefreshAnalyticsViewsCommand extends Command
 {
-    protected $signature   = 'analytics:views:refresh';
+    protected $signature = 'analytics:views:refresh';
+
     protected $description = 'Refresh analytics materialized views (daily_conversation_counts, weekly_topic_summary)';
 
     public function handle(): int

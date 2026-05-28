@@ -10,7 +10,7 @@ uses(RefreshDatabase::class);
 
 function configChatbot(array $settingsOverrides = []): array
 {
-    $org     = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $chatbot = Chatbot::factory()->for($org)->create(['status' => 'active']);
 
     if ($settingsOverrides) {
@@ -18,6 +18,7 @@ function configChatbot(array $settingsOverrides = []): array
     }
 
     $chatbot->load('settings');
+
     return [$org, $chatbot];
 }
 
@@ -30,10 +31,10 @@ function configUrl(Chatbot $chatbot): string
 
 it('returns the expected public config shape', function () {
     [, $chatbot] = configChatbot([
-        'primary_color'   => '#FF0000',
+        'primary_color' => '#FF0000',
         'welcome_message' => 'Hello there!',
-        'position'        => 'bottom-left',
-        'theme'           => 'dark',
+        'position' => 'bottom-left',
+        'theme' => 'dark',
     ]);
 
     $response = $this->getJson(configUrl($chatbot));
@@ -51,7 +52,7 @@ it('omits private fields from the config response', function () {
     [, $chatbot] = configChatbot(['ai_persona' => 'You are a pirate.']);
 
     $response = $this->getJson(configUrl($chatbot));
-    $data     = $response->json('data');
+    $data = $response->json('data');
 
     $response->assertOk();
 

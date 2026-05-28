@@ -7,17 +7,18 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
- * @property string                       $id
- * @property string                       $organization_id
- * @property string|null                  $created_by
- * @property string                       $name
- * @property string                       $key_hash
- * @property string                       $prefix
- * @property \Illuminate\Support\Carbon|null $last_used_at
- * @property \Illuminate\Support\Carbon   $created_at
- * @property string|null                  $plainKey  Transient — set after generation, never persisted.
+ * @property string $id
+ * @property string $organization_id
+ * @property string|null $created_by
+ * @property string $name
+ * @property string $key_hash
+ * @property string $prefix
+ * @property Carbon|null $last_used_at
+ * @property Carbon $created_at
+ * @property string|null $plainKey Transient — set after generation, never persisted.
  */
 class ApiKey extends Model
 {
@@ -40,7 +41,7 @@ class ApiKey extends Model
     {
         return [
             'last_used_at' => 'datetime',
-            'created_at'   => 'datetime',
+            'created_at' => 'datetime',
         ];
     }
 

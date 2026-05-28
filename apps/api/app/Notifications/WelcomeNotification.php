@@ -18,7 +18,7 @@ class WelcomeNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $dashboardUrl = rtrim((string) config('app.frontend_url', ''), '/') . '/chatbots';
+        $dashboardUrl = rtrim((string) config('app.frontend_url', ''), '/').'/chatbots';
 
         return (new MailMessage)
             ->subject("Welcome to ReplyIQ, {$this->user->name}!")
@@ -30,6 +30,6 @@ class WelcomeNotification extends Notification
             ->line('1. Upload your documents or paste your FAQ content.')
             ->line('2. Customize the widget to match your brand.')
             ->line('3. Copy the embed snippet to your website.')
-            ->line("Need help? Reply to this email or visit the docs at app.replyiq.com/docs.");
+            ->line('Need help? Reply to this email or visit the docs at app.replyiq.com/docs.');
     }
 }

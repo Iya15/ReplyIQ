@@ -6,9 +6,9 @@ use App\Models\Invitation;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
+use App\Notifications\InvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use App\Notifications\InvitationNotification;
 
 uses(RefreshDatabase::class);
 
@@ -16,8 +16,8 @@ uses(RefreshDatabase::class);
 
 function makeTeam(string $actorRole = 'owner'): array
 {
-    $org    = Organization::factory()->create();
-    $owner  = User::factory()->create();
+    $org = Organization::factory()->create();
+    $owner = User::factory()->create();
     $member = User::factory()->create();
 
     Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $owner->id,  'role' => 'owner']);
@@ -25,10 +25,9 @@ function makeTeam(string $actorRole = 'owner'): array
 
     // Build a separate user for the specified actor role if needed.
     $actor = match ($actorRole) {
-        'owner'  => $owner,
+        'owner' => $owner,
         'member' => $member,
-        default  => tap(User::factory()->create(), fn ($u) =>
-            Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $u->id, 'role' => $actorRole])
+        default => tap(User::factory()->create(), fn ($u) => Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $u->id, 'role' => $actorRole])
         ),
     };
 
@@ -38,6 +37,7 @@ function makeTeam(string $actorRole = 'owner'): array
 function teamHeaders(User $user): array
 {
     $token = $user->createToken('test')->plainTextToken;
+
     return ['Authorization' => "Bearer {$token}"];
 }
 
@@ -70,7 +70,7 @@ it('owner can invite a new member and email is sent', function () {
     $this->withHeaders(teamHeaders($owner))
         ->postJson('/api/v1/organizations/current/invitations', [
             'email' => 'newperson@example.com',
-            'role'  => 'member',
+            'role' => 'member',
         ])
         ->assertCreated()
         ->assertJsonPath('data.email', 'newperson@example.com');
@@ -101,7 +101,7 @@ it('cannot invite an existing member', function () {
     $this->withHeaders(teamHeaders($owner))
         ->postJson('/api/v1/organizations/current/invitations', [
             'email' => $member->email,
-            'role'  => 'member',
+            'role' => 'member',
         ])
         ->assertUnprocessable();
 });
@@ -113,7 +113,7 @@ it('member cannot send invitations', function () {
     $this->withHeaders(teamHeaders($member))
         ->postJson('/api/v1/organizations/current/invitations', [
             'email' => 'x@example.com',
-            'role'  => 'member',
+            'role' => 'member',
         ])
         ->assertForbidden();
 });
@@ -125,12 +125,12 @@ it('a new user can accept an invitation and gets a session token', function () {
 
     $invitation = Invitation::factory()->create([
         'organization_id' => $org->id,
-        'email'           => 'brand@new.com',
-        'invited_by'      => $inviter->id,
+        'email' => 'brand@new.com',
+        'invited_by' => $inviter->id,
     ]);
 
     $response = $this->postJson("/api/v1/invitations/{$invitation->token}/accept", [
-        'name'     => 'Brand New',
+        'name' => 'Brand New',
         'password' => 'SecurePass123!',
     ]);
 
@@ -155,10 +155,10 @@ it('a new user cannot accept without name and password', function () {
 
 it('an existing user can accept an invitation without a password', function () {
     ['org' => $org] = makeTeam();
-    $existing    = User::factory()->create(['email' => 'existing@example.com']);
-    $invitation  = Invitation::factory()->create([
+    $existing = User::factory()->create(['email' => 'existing@example.com']);
+    $invitation = Invitation::factory()->create([
         'organization_id' => $org->id,
-        'email'           => 'existing@example.com',
+        'email' => 'existing@example.com',
     ]);
 
     $this->postJson("/api/v1/invitations/{$invitation->token}/accept", [])
@@ -234,11 +234,11 @@ it('expired invitation cannot be accepted', function () {
     ['org' => $org] = makeTeam();
     $invitation = Invitation::factory()->expired()->create([
         'organization_id' => $org->id,
-        'email'           => 'late@example.com',
+        'email' => 'late@example.com',
     ]);
 
     $this->postJson("/api/v1/invitations/{$invitation->token}/accept", [
-        'name'     => 'Late User',
+        'name' => 'Late User',
         'password' => 'SecurePass123!',
     ])->assertNotFound();
 });

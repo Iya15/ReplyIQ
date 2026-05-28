@@ -13,7 +13,6 @@
  * We do NOT mock a valid Stripe signature here (that would require the secret)
  * — instead we confirm the rejection behaviour for invalid requests.
  */
-
 it('stripe webhook rejects requests with no signature header', function () {
     $this->postJson('/api/v1/webhooks/stripe', ['type' => 'customer.subscription.updated'])
         ->assertStatus(400); // Cashier returns 400 for missing/invalid signature

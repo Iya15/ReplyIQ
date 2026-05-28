@@ -17,12 +17,12 @@ class InvitationFactory extends Factory
     {
         return [
             'organization_id' => Organization::factory(),
-            'email'           => fake()->unique()->safeEmail(),
-            'role'            => 'member',
-            'token'           => Str::random(64),
-            'invited_by'      => User::factory(),
-            'expires_at'      => now()->addDays(7),
-            'accepted_at'     => null,
+            'email' => fake()->unique()->safeEmail(),
+            'role' => 'member',
+            'token' => Str::random(64),
+            'invited_by' => User::factory(),
+            'expires_at' => now()->addDays(7),
+            'accepted_at' => null,
         ];
     }
 

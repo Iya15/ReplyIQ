@@ -25,7 +25,7 @@ uses(RefreshDatabase::class);
 
 function failureChatbot(): array
 {
-    $org     = Organization::factory()->create(['name' => 'Failure Org']);
+    $org = Organization::factory()->create(['name' => 'Failure Org']);
     $chatbot = Chatbot::factory()->for($org)->create(['name' => 'FailureBot']);
 
     $chatbot->settings->update(['similarity_threshold' => 0.5]);
@@ -39,25 +39,25 @@ function failureDoc(string $orgId, string $chatbotId): Document
 {
     return Document::factory()->create([
         'organization_id' => $orgId,
-        'chatbot_id'      => $chatbotId,
-        'status'          => DocumentStatus::Ready,
-        'source_type'     => DocumentSourceType::Manual,
+        'chatbot_id' => $chatbotId,
+        'status' => DocumentStatus::Ready,
+        'source_type' => DocumentSourceType::Manual,
     ]);
 }
 
 /** Unit-vector embedding: all zeros except dimension $hot = 1.0 */
 function failureUnitVec(int $hot, int $size = 1536): string
 {
-    $v       = array_fill(0, $size, 0.0);
+    $v = array_fill(0, $size, 0.0);
     $v[$hot] = 1.0;
 
-    return '[' . implode(',', $v) . ']';
+    return '['.implode(',', $v).']';
 }
 
 /** @return float[] */
 function failureUnitArr(int $hot, int $size = 1536): array
 {
-    $v       = array_fill(0, $size, 0.0);
+    $v = array_fill(0, $size, 0.0);
     $v[$hot] = 1.0;
 
     return $v;
@@ -72,16 +72,16 @@ function insertFailureChunk(
     $id = Str::uuid()->toString();
 
     DB::table('chunks')->insert([
-        'id'              => $id,
+        'id' => $id,
         'organization_id' => $orgId,
-        'chatbot_id'      => $chatbotId,
-        'document_id'     => $documentId,
-        'chunk_index'     => 0,
-        'content'         => $content,
-        'token_count'     => str_word_count($content),
-        'embedding'       => failureUnitVec(0),
-        'metadata'        => json_encode([]),
-        'created_at'      => now(),
+        'chatbot_id' => $chatbotId,
+        'document_id' => $documentId,
+        'chunk_index' => 0,
+        'content' => $content,
+        'token_count' => str_word_count($content),
+        'embedding' => failureUnitVec(0),
+        'metadata' => json_encode([]),
+        'created_at' => now(),
     ]);
 
     return $id;
@@ -89,9 +89,13 @@ function insertFailureChunk(
 
 function failureEmbedder(): EmbeddingClient
 {
-    return new class implements EmbeddingClient {
+    return new class implements EmbeddingClient
+    {
         /** @return float[] */
-        public function embed(string $text): array { return failureUnitArr(0); }
+        public function embed(string $text): array
+        {
+            return failureUnitArr(0);
+        }
 
         /** @return float[][] */
         public function embedBatch(array $texts): array
@@ -99,9 +103,15 @@ function failureEmbedder(): EmbeddingClient
             return array_map(fn () => failureUnitArr(0), $texts);
         }
 
-        public function dimension(): int { return 1536; }
+        public function dimension(): int
+        {
+            return 1536;
+        }
 
-        public function model(): string { return 'test'; }
+        public function model(): string
+        {
+            return 'test';
+        }
     };
 }
 
@@ -109,7 +119,7 @@ function makePipelineWithLlm(LlmClient $llm): RagPipeline
 {
     return new RagPipeline(
         new RetrievalService(failureEmbedder()),
-        new PromptBuilder(),
+        new PromptBuilder,
         $llm,
     );
 }
@@ -118,27 +128,31 @@ function makePipelineWithLlm(LlmClient $llm): RagPipeline
 
 it('returns graceful reply when LLM chat() throws a RuntimeException', function () {
     [$org, $chatbot] = failureChatbot();
-    $doc             = failureDoc($org->id, $chatbot->id);
+    $doc = failureDoc($org->id, $chatbot->id);
     insertFailureChunk($org->id, $chatbot->id, $doc->id);
 
-    $llm = new class implements LlmClient {
+    $llm = new class implements LlmClient
+    {
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
-            throw new \RuntimeException('OpenAI API timeout');
+            throw new RuntimeException('OpenAI API timeout');
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             yield '';
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 
     $reply = makePipelineWithLlm($llm)->execute($chatbot, 'What is the refund policy?');
 
     expect($reply)->toBeInstanceOf(GeneratedReply::class)
-        ->and($reply->content)->toContain("unable to respond right now")
+        ->and($reply->content)->toContain('unable to respond right now')
         ->and($reply->confidence)->toBe(0.0)
         ->and($reply->sources)->toBeEmpty()
         ->and($reply->tokens_used)->toBe(0)
@@ -147,32 +161,38 @@ it('returns graceful reply when LLM chat() throws a RuntimeException', function 
 
 it('returns graceful reply when LLM chatStream() throws mid-generation', function () {
     [$org, $chatbot] = failureChatbot();
-    $doc             = failureDoc($org->id, $chatbot->id);
+    $doc = failureDoc($org->id, $chatbot->id);
     insertFailureChunk($org->id, $chatbot->id, $doc->id);
 
-    $llm = new class implements LlmClient {
+    $llm = new class implements LlmClient
+    {
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
             return new LlmResponse('ok', 10, 5, 'stop', $model);
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             yield 'Partial ';
-            throw new \RuntimeException('Stream interrupted');
+            throw new RuntimeException('Stream interrupted');
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 
     $received = [];
-    $reply    = makePipelineWithLlm($llm)->execute(
+    $reply = makePipelineWithLlm($llm)->execute(
         $chatbot,
         'Tell me something',
-        onToken: function (string $d) use (&$received): void { $received[] = $d; },
+        onToken: function (string $d) use (&$received): void {
+            $received[] = $d;
+        },
     );
 
-    expect($reply->content)->toContain("unable to respond right now")
+    expect($reply->content)->toContain('unable to respond right now')
         ->and($reply->confidence)->toBe(0.0)
         ->and($reply->sources)->toBeEmpty()
         ->and($reply->tokens_used)->toBe(0);
@@ -182,21 +202,25 @@ it('logs the error with chatbot_id and model when LLM fails', function () {
     Log::spy();
 
     [$org, $chatbot] = failureChatbot();
-    $doc             = failureDoc($org->id, $chatbot->id);
+    $doc = failureDoc($org->id, $chatbot->id);
     insertFailureChunk($org->id, $chatbot->id, $doc->id);
 
-    $llm = new class implements LlmClient {
+    $llm = new class implements LlmClient
+    {
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
-            throw new \RuntimeException('API key invalid');
+            throw new RuntimeException('API key invalid');
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             yield '';
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 
     makePipelineWithLlm($llm)->execute($chatbot, 'query');
@@ -215,22 +239,27 @@ it('does not call LLM and returns fallback when retrieval yields no chunks', fun
 
     // No chunks inserted → retrieval will return empty collection.
     $called = false;
-    $llm    = new class($called) implements LlmClient {
+    $llm = new class($called) implements LlmClient
+    {
         public function __construct(private bool &$called) {}
 
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
             $this->called = true;
+
             return new LlmResponse('should not reach here', 0, 0, 'stop', $model);
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             $this->called = true;
             yield '';
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 
     $reply = makePipelineWithLlm($llm)->execute($chatbot, 'Anything');
@@ -243,26 +272,30 @@ it('does not call LLM and returns fallback when retrieval yields no chunks', fun
 
 it('returns graceful reply when LLM throws a non-RuntimeException Throwable', function () {
     [$org, $chatbot] = failureChatbot();
-    $doc             = failureDoc($org->id, $chatbot->id);
+    $doc = failureDoc($org->id, $chatbot->id);
     insertFailureChunk($org->id, $chatbot->id, $doc->id);
 
-    $llm = new class implements LlmClient {
+    $llm = new class implements LlmClient
+    {
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
-            throw new \Error('Fatal error in LLM driver');
+            throw new Error('Fatal error in LLM driver');
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             yield '';
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 
     $reply = makePipelineWithLlm($llm)->execute($chatbot, 'query');
 
     // A bare \Error (not \Exception) must also be caught.
-    expect($reply->content)->toContain("unable to respond right now")
+    expect($reply->content)->toContain('unable to respond right now')
         ->and($reply->confidence)->toBe(0.0);
 });

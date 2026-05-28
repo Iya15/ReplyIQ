@@ -6,11 +6,13 @@ use App\Enums\ConversationStatus;
 use App\Enums\MessageRole;
 use App\Enums\MessageStatus;
 use App\Events\ConversationEscalatedEvent;
+use App\Events\MessageCompleted;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,12 +32,12 @@ class HandoffController extends Controller
             return $this->error('invalid_status', 'Only active conversations can be taken over.', $r, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        /** @var \App\Models\User $agent */
+        /** @var User $agent */
         $agent = $r->user();
 
         $conversation->update([
-            'status'       => ConversationStatus::Escalated,
-            'agent_id'     => $agent->id,
+            'status' => ConversationStatus::Escalated,
+            'agent_id' => $agent->id,
             'escalated_at' => now(),
         ]);
 
@@ -63,12 +65,12 @@ class HandoffController extends Controller
         $message = Message::create([
             'organization_id' => $conversation->organization_id,
             'conversation_id' => $conversation->id,
-            'role'            => MessageRole::Agent,
-            'content'         => $r->string('content')->toString(),
-            'status'          => MessageStatus::Complete,
+            'role' => MessageRole::Agent,
+            'content' => $r->string('content')->toString(),
+            'status' => MessageStatus::Complete,
         ]);
 
-        broadcast(new \App\Events\MessageCompleted($message));
+        broadcast(new MessageCompleted($message));
 
         return $this->ok(MessageResource::make($message), $r, Response::HTTP_CREATED);
     }

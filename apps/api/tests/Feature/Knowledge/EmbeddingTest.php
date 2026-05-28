@@ -6,21 +6,23 @@ use App\Services\Embedding\EmbeddingClient;
 use App\Services\Embedding\EmbeddingClientFactory;
 use App\Services\Embedding\OllamaEmbeddingClient;
 use App\Services\Embedding\OpenAiEmbeddingClient;
+use OpenAI\Contracts\ClientContract;
 use OpenAI\Contracts\Resources\EmbeddingsContract;
 use OpenAI\Exceptions\TransporterException;
 use OpenAI\Responses\Embeddings\CreateResponse;
+use Psr\Http\Client\ClientExceptionInterface;
 
 // ── Factory resolution ────────────────────────────────────────────────────────
 
 it('factory resolves OpenAiEmbeddingClient by default', function () {
     expect(app(EmbeddingClient::class))->toBeInstanceOf(OpenAiEmbeddingClient::class);
-})->skip(fn() => env('AI_PROVIDER') === 'ollama');
+})->skip(fn () => env('AI_PROVIDER') === 'ollama');
 
 it('factory resolves OllamaEmbeddingClient when AI_PROVIDER=ollama', function () {
     $client = EmbeddingClientFactory::resolve(app());
 
     expect($client)->toBeInstanceOf(OllamaEmbeddingClient::class);
-})->skip(fn() => env('AI_PROVIDER') !== 'ollama');
+})->skip(fn () => env('AI_PROVIDER') !== 'ollama');
 
 // ── OpenAI client ─────────────────────────────────────────────────────────────
 
@@ -31,16 +33,16 @@ it('embed() returns a 1536-dim float array', function () {
 });
 
 it('embedBatch() splits 250 texts into three OpenAI calls of 100, 100, 50', function () {
-    $openaiClient = Mockery::mock(\OpenAI\Contracts\ClientContract::class);
+    $openaiClient = Mockery::mock(ClientContract::class);
     $resource = Mockery::mock(EmbeddingsContract::class);
 
     $openaiClient->shouldReceive('embeddings')->times(3)->andReturn($resource);
     $resource->shouldReceive('create')
-        ->with(Mockery::on(fn($a) => count($a['input']) === 100))
+        ->with(Mockery::on(fn ($a) => count($a['input']) === 100))
         ->twice()
         ->andReturn(fakeResponse(100));
     $resource->shouldReceive('create')
-        ->with(Mockery::on(fn($a) => count($a['input']) === 50))
+        ->with(Mockery::on(fn ($a) => count($a['input']) === 50))
         ->once()
         ->andReturn(fakeResponse(50));
 
@@ -50,7 +52,7 @@ it('embedBatch() splits 250 texts into three OpenAI calls of 100, 100, 50', func
 });
 
 it('retries up to 3 times on TransporterException then succeeds', function () {
-    $openaiClient = Mockery::mock(\OpenAI\Contracts\ClientContract::class);
+    $openaiClient = Mockery::mock(ClientContract::class);
     $resource = Mockery::mock(EmbeddingsContract::class);
 
     $openaiClient->shouldReceive('embeddings')->times(3)->andReturn($resource);
@@ -59,14 +61,15 @@ it('retries up to 3 times on TransporterException then succeeds', function () {
     $resource->shouldReceive('create')->times(3)->andReturnUsing(function () use (&$calls) {
         $calls++;
         if ($calls < 3) {
-            $psrEx = new class('connection reset') extends \Exception implements \Psr\Http\Client\ClientExceptionInterface {};
+            $psrEx = new class('connection reset') extends Exception implements ClientExceptionInterface {};
             throw new TransporterException($psrEx);
         }
 
         return fakeResponse(1);
     });
 
-    $client = new class ($openaiClient) extends OpenAiEmbeddingClient {
+    $client = new class($openaiClient) extends OpenAiEmbeddingClient
+    {
         protected function retryDelay(int $attempt): void {}
     };
 
@@ -74,25 +77,26 @@ it('retries up to 3 times on TransporterException then succeeds', function () {
 });
 
 it('throws EmbeddingException after exhausting all retries', function () {
-    $openaiClient = Mockery::mock(\OpenAI\Contracts\ClientContract::class);
+    $openaiClient = Mockery::mock(ClientContract::class);
     $resource = Mockery::mock(EmbeddingsContract::class);
 
     $openaiClient->shouldReceive('embeddings')->times(3)->andReturn($resource);
     $resource->shouldReceive('create')
         ->times(3)
         ->andThrow(new TransporterException(
-            new class('timeout') extends \Exception implements \Psr\Http\Client\ClientExceptionInterface {},
+            new class('timeout') extends Exception implements ClientExceptionInterface {},
         ));
 
-    $client = new class ($openaiClient) extends OpenAiEmbeddingClient {
+    $client = new class($openaiClient) extends OpenAiEmbeddingClient
+    {
         protected function retryDelay(int $attempt): void {}
     };
 
-    expect(fn() => $client->embed('test'))->toThrow(EmbeddingException::class);
+    expect(fn () => $client->embed('test'))->toThrow(EmbeddingException::class);
 });
 
 it('embedBatch returns empty array for empty input without calling the API', function () {
-    $openaiClient = Mockery::mock(\OpenAI\Contracts\ClientContract::class);
+    $openaiClient = Mockery::mock(ClientContract::class);
     $openaiClient->shouldNotReceive('embeddings');
 
     expect((new OpenAiEmbeddingClient($openaiClient))->embedBatch([]))->toBe([]);
@@ -109,12 +113,12 @@ it('dimension() returns 1536', function () {
 // ── Ollama client ─────────────────────────────────────────────────────────────
 
 it('OllamaEmbeddingClient::embed() throws DimensionMismatchException', function () {
-    expect(fn() => (new OllamaEmbeddingClient('http://localhost:11434'))->embed('test'))
+    expect(fn () => (new OllamaEmbeddingClient('http://localhost:11434'))->embed('test'))
         ->toThrow(DimensionMismatchException::class);
 });
 
 it('OllamaEmbeddingClient::embedBatch() throws DimensionMismatchException', function () {
-    expect(fn() => (new OllamaEmbeddingClient('http://localhost:11434'))->embedBatch(['a']))
+    expect(fn () => (new OllamaEmbeddingClient('http://localhost:11434'))->embedBatch(['a']))
         ->toThrow(DimensionMismatchException::class);
 });
 
@@ -138,7 +142,7 @@ function fakeResponse(int $count): CreateResponse
 {
     $data = $count > 0
         ? array_map(
-            fn(int $i) => ['object' => 'embedding', 'index' => $i, 'embedding' => array_fill(0, 1536, 0.1)],
+            fn (int $i) => ['object' => 'embedding', 'index' => $i, 'embedding' => array_fill(0, 1536, 0.1)],
             range(0, $count - 1),
         )
         : [];
@@ -148,7 +152,7 @@ function fakeResponse(int $count): CreateResponse
 
 function makeOpenAiClient(CreateResponse $response): OpenAiEmbeddingClient
 {
-    $openaiClient = Mockery::mock(\OpenAI\Contracts\ClientContract::class);
+    $openaiClient = Mockery::mock(ClientContract::class);
     $resource = Mockery::mock(EmbeddingsContract::class);
 
     $openaiClient->allows('embeddings')->andReturn($resource);

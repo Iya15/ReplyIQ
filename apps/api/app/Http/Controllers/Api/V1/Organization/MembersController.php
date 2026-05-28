@@ -7,6 +7,7 @@ use App\Http\Requests\Team\UpdateMemberRoleRequest;
 use App\Http\Resources\MemberResource;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -61,7 +62,7 @@ class MembersController extends Controller
         $org = app('currentOrganization');
 
         // Members can remove themselves (leave); owners/admins can remove others.
-        /** @var \App\Models\User $actor */
+        /** @var User $actor */
         $actor = $r->user();
 
         if ((string) $actor->id !== $userId) {

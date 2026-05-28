@@ -20,15 +20,15 @@ class ApiKeyFactory extends Factory
 
     public function definition(): array
     {
-        $plain = 'rk_live_' . Str::random(32);
+        $plain = 'rk_live_'.Str::random(32);
 
         return [
             'organization_id' => Organization::factory(),
-            'created_by'      => User::factory(),
-            'name'            => fake()->words(2, true),
-            'key_hash'        => hash('sha256', $plain),
-            'prefix'          => substr($plain, 0, 12),
-            'last_used_at'    => null,
+            'created_by' => User::factory(),
+            'name' => fake()->words(2, true),
+            'key_hash' => hash('sha256', $plain),
+            'prefix' => substr($plain, 0, 12),
+            'last_used_at' => null,
         ];
     }
 
@@ -38,12 +38,12 @@ class ApiKeyFactory extends Factory
      */
     public function forPlainKey(string &$plain): static
     {
-        $plain = 'rk_live_' . Str::random(32);
+        $plain = 'rk_live_'.Str::random(32);
         $captured = $plain;
 
         return $this->state([
             'key_hash' => hash('sha256', $captured),
-            'prefix'   => substr($captured, 0, 12),
+            'prefix' => substr($captured, 0, 12),
         ]);
     }
 }

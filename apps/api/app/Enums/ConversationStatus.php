@@ -4,7 +4,7 @@ namespace App\Enums;
 
 enum ConversationStatus: string
 {
-    case Active    = 'active';
-    case Resolved  = 'resolved';
+    case Active = 'active';
+    case Resolved = 'resolved';
     case Escalated = 'escalated';
 }

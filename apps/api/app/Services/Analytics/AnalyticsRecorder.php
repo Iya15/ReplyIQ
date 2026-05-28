@@ -19,25 +19,26 @@ use Illuminate\Support\Str;
  */
 class AnalyticsRecorder
 {
-    private const BUFFER_KEY      = 'analytics:buffer';
+    private const BUFFER_KEY = 'analytics:buffer';
+
     private const FLUSH_THRESHOLD = 100;
 
     public function record(
-        string  $eventType,
-        string  $organizationId,
-        ?string $chatbotId      = null,
+        string $eventType,
+        string $organizationId,
+        ?string $chatbotId = null,
         ?string $conversationId = null,
-        array   $context        = [],
+        array $context = [],
     ): void {
         try {
             $payload = (string) json_encode([
-                'id'              => (string) Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'organization_id' => $organizationId,
-                'chatbot_id'      => $chatbotId,
+                'chatbot_id' => $chatbotId,
                 'conversation_id' => $conversationId,
-                'event_type'      => $eventType,
-                'context'         => $context,
-                'occurred_at'     => now()->toIso8601String(),
+                'event_type' => $eventType,
+                'context' => $context,
+                'occurred_at' => now()->toIso8601String(),
             ]);
 
             $length = (int) Redis::rpush(self::BUFFER_KEY, $payload);
@@ -48,7 +49,7 @@ class AnalyticsRecorder
         } catch (\Throwable $e) {
             Log::error('AnalyticsRecorder: failed to buffer event', [
                 'event_type' => $eventType,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -79,13 +80,13 @@ class AnalyticsRecorder
             }
 
             $rows[] = [
-                'id'              => $data['id'] ?? (string) Str::uuid(),
+                'id' => $data['id'] ?? (string) Str::uuid(),
                 'organization_id' => $data['organization_id'],
-                'chatbot_id'      => $data['chatbot_id'] ?? null,
+                'chatbot_id' => $data['chatbot_id'] ?? null,
                 'conversation_id' => $data['conversation_id'] ?? null,
-                'event_type'      => $data['event_type'],
-                'context'         => json_encode($data['context'] ?? []),
-                'occurred_at'     => $data['occurred_at'],
+                'event_type' => $data['event_type'],
+                'context' => json_encode($data['context'] ?? []),
+                'occurred_at' => $data['occurred_at'],
             ];
         }
 

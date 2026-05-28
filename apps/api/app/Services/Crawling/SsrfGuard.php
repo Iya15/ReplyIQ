@@ -101,7 +101,7 @@ final class SsrfGuard
 
     private static function ipInCidr(string $ip, string $network, int $prefix): bool
     {
-        $ipBin  = inet_pton($ip);
+        $ipBin = inet_pton($ip);
         $netBin = inet_pton($network);
 
         if ($ipBin === false || $netBin === false || strlen($ipBin) !== strlen($netBin)) {
@@ -118,8 +118,8 @@ final class SsrfGuard
 
         // Check the partial byte (if the prefix does not fall on a byte boundary).
         if ($remainder > 0) {
-            $mask    = (0xFF << (8 - $remainder)) & 0xFF;
-            $ipByte  = strlen($ipBin)  > $fullBytes ? ord($ipBin[$fullBytes])  : 0;
+            $mask = (0xFF << (8 - $remainder)) & 0xFF;
+            $ipByte = strlen($ipBin) > $fullBytes ? ord($ipBin[$fullBytes]) : 0;
             $netByte = strlen($netBin) > $fullBytes ? ord($netBin[$fullBytes]) : 0;
 
             if (($ipByte & $mask) !== ($netByte & $mask)) {

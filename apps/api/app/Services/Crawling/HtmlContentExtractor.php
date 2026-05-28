@@ -37,10 +37,10 @@ class HtmlContentExtractor
      */
     public function extract(string $html): string
     {
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
 
         $prev = libxml_use_internal_errors(true);
-        $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET | LIBXML_COMPACT);
+        $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_NONET | LIBXML_COMPACT);
         libxml_clear_errors();
         libxml_use_internal_errors($prev);
 
@@ -90,10 +90,10 @@ class HtmlContentExtractor
      */
     public function extractTitle(string $html): string
     {
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
 
         $prev = libxml_use_internal_errors(true);
-        $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET | LIBXML_COMPACT);
+        $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_NONET | LIBXML_COMPACT);
         libxml_clear_errors();
         libxml_use_internal_errors($prev);
 

@@ -34,7 +34,7 @@ class MessagesController extends Controller
 
         $message = Message::whereHas('conversation', function ($query) use ($chatbot, $visitorId) {
             $query->where('chatbot_id', $chatbot->id)
-                  ->where('visitor_id', $visitorId);
+                ->where('visitor_id', $visitorId);
         })->find($id);
 
         if (! $message) {

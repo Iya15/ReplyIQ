@@ -24,7 +24,7 @@ uses(RefreshDatabase::class);
 
 function makePipelineChatbot(array $settingsOverrides = []): array
 {
-    $org     = Organization::factory()->create(['name' => 'Pipeline Corp']);
+    $org = Organization::factory()->create(['name' => 'Pipeline Corp']);
     $chatbot = Chatbot::factory()->for($org)->create(['name' => 'PipelineBot']);
 
     $chatbot->settings->update(array_merge([
@@ -42,9 +42,9 @@ function makePipelineDoc(string $orgId, string $chatbotId): Document
 {
     return Document::factory()->create([
         'organization_id' => $orgId,
-        'chatbot_id'      => $chatbotId,
-        'status'          => DocumentStatus::Ready,
-        'source_type'     => DocumentSourceType::Manual,
+        'chatbot_id' => $chatbotId,
+        'status' => DocumentStatus::Ready,
+        'source_type' => DocumentSourceType::Manual,
     ]);
 }
 
@@ -59,16 +59,16 @@ function insertPipelineChunk(
     $id = Str::uuid()->toString();
 
     DB::table('chunks')->insert([
-        'id'              => $id,
+        'id' => $id,
         'organization_id' => $orgId,
-        'chatbot_id'      => $chatbotId,
-        'document_id'     => $documentId,
-        'chunk_index'     => $index,
-        'content'         => $content,
-        'token_count'     => str_word_count($content),
-        'embedding'       => $embeddingVector,
-        'metadata'        => json_encode([]),
-        'created_at'      => now(),
+        'chatbot_id' => $chatbotId,
+        'document_id' => $documentId,
+        'chunk_index' => $index,
+        'content' => $content,
+        'token_count' => str_word_count($content),
+        'embedding' => $embeddingVector,
+        'metadata' => json_encode([]),
+        'created_at' => now(),
     ]);
 
     return $id;
@@ -77,16 +77,16 @@ function insertPipelineChunk(
 /** Build a unit-vector embedding string: all zeros except dimension $hot = 1.0 */
 function pipelineUnitVec(int $hot, int $size = 1536): string
 {
-    $v        = array_fill(0, $size, 0.0);
-    $v[$hot]  = 1.0;
+    $v = array_fill(0, $size, 0.0);
+    $v[$hot] = 1.0;
 
-    return '[' . implode(',', $v) . ']';
+    return '['.implode(',', $v).']';
 }
 
 /** @return float[] */
 function pipelineUnitArr(int $hot, int $size = 1536): array
 {
-    $v       = array_fill(0, $size, 0.0);
+    $v = array_fill(0, $size, 0.0);
     $v[$hot] = 1.0;
 
     return $v;
@@ -94,12 +94,16 @@ function pipelineUnitArr(int $hot, int $size = 1536): array
 
 function makePipelineRetriever(array $vector): RetrievalService
 {
-    $embedder = new class($vector) implements EmbeddingClient {
+    $embedder = new class($vector) implements EmbeddingClient
+    {
         /** @param float[] $v */
         public function __construct(private readonly array $v) {}
 
         /** @return float[] */
-        public function embed(string $text): array { return $this->v; }
+        public function embed(string $text): array
+        {
+            return $this->v;
+        }
 
         /** @return float[][] */
         public function embedBatch(array $texts): array
@@ -107,9 +111,15 @@ function makePipelineRetriever(array $vector): RetrievalService
             return array_map(fn () => $this->v, $texts);
         }
 
-        public function dimension(): int { return count($this->v); }
+        public function dimension(): int
+        {
+            return count($this->v);
+        }
 
-        public function model(): string { return 'test'; }
+        public function model(): string
+        {
+            return 'test';
+        }
     };
 
     return new RetrievalService($embedder);
@@ -117,26 +127,30 @@ function makePipelineRetriever(array $vector): RetrievalService
 
 function makeMockLlm(string $responseContent): LlmClient
 {
-    return new class($responseContent) implements LlmClient {
+    return new class($responseContent) implements LlmClient
+    {
         public function __construct(private readonly string $content) {}
 
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
             return new LlmResponse(
-                content:       $this->content,
-                tokens_used:   50,
-                latency_ms:    10,
+                content: $this->content,
+                tokens_used: 50,
+                latency_ms: 10,
                 finish_reason: 'stop',
-                model:         $model,
+                model: $model,
             );
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             yield $this->content;
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 }
 
@@ -144,7 +158,7 @@ function makePipeline(array $queryVector, string $llmContent): RagPipeline
 {
     return new RagPipeline(
         makePipelineRetriever($queryVector),
-        new PromptBuilder(),
+        new PromptBuilder,
         makeMockLlm($llmContent),
     );
 }
@@ -153,12 +167,12 @@ function makePipeline(array $queryVector, string $llmContent): RagPipeline
 
 it('returns LLM content when matching chunks exist', function () {
     [$org, $chatbot] = makePipelineChatbot();
-    $doc             = makePipelineDoc($org->id, $chatbot->id);
+    $doc = makePipelineDoc($org->id, $chatbot->id);
 
     insertPipelineChunk($org->id, $chatbot->id, $doc->id, pipelineUnitVec(0), 'Pricing: $29/month Starter.');
 
     $pipeline = makePipeline(pipelineUnitArr(0), 'The Starter plan costs $29 per month.');
-    $reply    = $pipeline->execute($chatbot, 'How much does Starter cost?');
+    $reply = $pipeline->execute($chatbot, 'How much does Starter cost?');
 
     expect($reply)->toBeInstanceOf(GeneratedReply::class)
         ->and($reply->content)->toBe('The Starter plan costs $29 per month.')
@@ -167,33 +181,38 @@ it('returns LLM content when matching chunks exist', function () {
 
 it('returns fallback and skips LLM when no chunks match', function () {
     [$org, $chatbot] = makePipelineChatbot();
-    $doc             = makePipelineDoc($org->id, $chatbot->id);
+    $doc = makePipelineDoc($org->id, $chatbot->id);
 
     // Chunk at dim 0; query at dim 1 → cosine similarity = 0 → below threshold.
     insertPipelineChunk($org->id, $chatbot->id, $doc->id, pipelineUnitVec(0), 'Some unrelated content.');
 
     $llmWasCalled = false;
-    $llm = new class($llmWasCalled) implements LlmClient {
+    $llm = new class($llmWasCalled) implements LlmClient
+    {
         public function __construct(private bool &$called) {}
 
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
             $this->called = true;
+
             return new LlmResponse('should not be called', 0, 0, 'stop', $model);
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             $this->called = true;
             yield '';
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 
     $pipeline = new RagPipeline(
         makePipelineRetriever(pipelineUnitArr(1)), // orthogonal → no match
-        new PromptBuilder(),
+        new PromptBuilder,
         $llm,
     );
 
@@ -208,33 +227,33 @@ it('returns fallback and skips LLM when no chunks match', function () {
 
 it('sets confidence to the max chunk similarity', function () {
     [$org, $chatbot] = makePipelineChatbot();
-    $doc             = makePipelineDoc($org->id, $chatbot->id);
+    $doc = makePipelineDoc($org->id, $chatbot->id);
 
     insertPipelineChunk($org->id, $chatbot->id, $doc->id, pipelineUnitVec(0), 'Perfect match.', index: 0);
 
-    $blended    = array_fill(0, 1536, 0.0);
+    $blended = array_fill(0, 1536, 0.0);
     $blended[0] = 0.9;
     $blended[1] = sqrt(1 - 0.9 ** 2);
     insertPipelineChunk(
         $org->id, $chatbot->id, $doc->id,
-        '[' . implode(',', $blended) . ']',
+        '['.implode(',', $blended).']',
         'Partial match.',
         index: 1,
     );
 
     $pipeline = makePipeline(pipelineUnitArr(0), 'Some response.');
-    $reply    = $pipeline->execute($chatbot, 'query', threshold: 0.0);
+    $reply = $pipeline->execute($chatbot, 'query', threshold: 0.0);
 
     expect($reply->confidence)->toBeGreaterThan(0.99);
 });
 
 it('populates sources array with chunk_id, document_id, and similarity', function () {
     [$org, $chatbot] = makePipelineChatbot();
-    $doc             = makePipelineDoc($org->id, $chatbot->id);
-    $chunkId         = insertPipelineChunk($org->id, $chatbot->id, $doc->id, pipelineUnitVec(0), 'Some content.');
+    $doc = makePipelineDoc($org->id, $chatbot->id);
+    $chunkId = insertPipelineChunk($org->id, $chatbot->id, $doc->id, pipelineUnitVec(0), 'Some content.');
 
     $pipeline = makePipeline(pipelineUnitArr(0), 'Any reply.');
-    $reply    = $pipeline->execute($chatbot, 'query');
+    $reply = $pipeline->execute($chatbot, 'query');
 
     expect($reply->sources)->toHaveCount(1)
         ->and($reply->sources[0]['chunk_id'])->toBe($chunkId)
@@ -244,13 +263,13 @@ it('populates sources array with chunk_id, document_id, and similarity', functio
 
 it('streams content via onToken callback and accumulates full reply', function () {
     [$org, $chatbot] = makePipelineChatbot();
-    $doc             = makePipelineDoc($org->id, $chatbot->id);
+    $doc = makePipelineDoc($org->id, $chatbot->id);
 
     insertPipelineChunk($org->id, $chatbot->id, $doc->id, pipelineUnitVec(0), 'Content for streaming.');
 
-    $deltas   = [];
+    $deltas = [];
     $pipeline = makePipeline(pipelineUnitArr(0), 'Streaming response here.');
-    $reply    = $pipeline->execute($chatbot, 'query', onToken: function (string $delta) use (&$deltas): void {
+    $reply = $pipeline->execute($chatbot, 'query', onToken: function (string $delta) use (&$deltas): void {
         $deltas[] = $delta;
     });
 
@@ -261,31 +280,36 @@ it('streams content via onToken callback and accumulates full reply', function (
 
 it('passes history to the prompt builder', function () {
     [$org, $chatbot] = makePipelineChatbot();
-    $doc             = makePipelineDoc($org->id, $chatbot->id);
+    $doc = makePipelineDoc($org->id, $chatbot->id);
 
     insertPipelineChunk($org->id, $chatbot->id, $doc->id, pipelineUnitVec(0), 'Relevant context.');
 
     $capturedMessages = null;
-    $llm = new class($capturedMessages) implements LlmClient {
+    $llm = new class($capturedMessages) implements LlmClient
+    {
         /** @param array<mixed>|null $captured */
         public function __construct(private mixed &$captured) {}
 
         public function chat(array $messages, string $model, int $maxTokens, float $temperature): LlmResponse
         {
             $this->captured = $messages;
+
             return new LlmResponse('ok', 10, 5, 'stop', $model);
         }
 
-        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): \Generator
+        public function chatStream(array $messages, string $model, int $maxTokens, float $temperature): Generator
         {
             yield 'ok';
         }
 
-        public function model(): string { return 'mock'; }
+        public function model(): string
+        {
+            return 'mock';
+        }
     };
 
-    $history  = [['role' => 'user', 'content' => 'Prior question']];
-    $pipeline = new RagPipeline(makePipelineRetriever(pipelineUnitArr(0)), new PromptBuilder(), $llm);
+    $history = [['role' => 'user', 'content' => 'Prior question']];
+    $pipeline = new RagPipeline(makePipelineRetriever(pipelineUnitArr(0)), new PromptBuilder, $llm);
     $pipeline->execute($chatbot, 'Follow-up', $history);
 
     // Messages: system + 1 history turn + current user

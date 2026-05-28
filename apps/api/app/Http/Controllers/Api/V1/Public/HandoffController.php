@@ -41,7 +41,7 @@ class HandoffController extends Controller
         }
 
         $conversation->update([
-            'status'       => ConversationStatus::Escalated,
+            'status' => ConversationStatus::Escalated,
             'escalated_at' => now(),
         ]);
 

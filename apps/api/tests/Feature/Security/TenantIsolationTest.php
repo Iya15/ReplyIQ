@@ -18,7 +18,6 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -26,10 +25,11 @@ uses(RefreshDatabase::class);
 
 function isolationOrg(): array
 {
-    $org  = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $user = User::factory()->create();
     Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $user->id, 'role' => 'owner']);
     $token = $user->createToken('test')->plainTextToken;
+
     return compact('org', 'user', 'token');
 }
 
@@ -42,7 +42,7 @@ function isolationHeaders(string $token): array
 
 it('cannot view a chatbot from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
 
@@ -53,7 +53,7 @@ it('cannot view a chatbot from another organization', function () {
 
 it('cannot update a chatbot from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
 
@@ -64,7 +64,7 @@ it('cannot update a chatbot from another organization', function () {
 
 it('cannot delete a chatbot from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
 
@@ -77,10 +77,10 @@ it('cannot delete a chatbot from another organization', function () {
 
 it('cannot delete a document from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
-    $doc     = Document::factory()->for($chatbot)->create(['organization_id' => $orgB->id]);
+    $doc = Document::factory()->for($chatbot)->create(['organization_id' => $orgB->id]);
 
     $this->withHeaders(isolationHeaders($tokenA))
         ->deleteJson("/api/v1/documents/{$doc->id}")
@@ -89,7 +89,7 @@ it('cannot delete a document from another organization', function () {
 
 it('cannot list documents for a chatbot from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
 
@@ -102,10 +102,10 @@ it('cannot list documents for a chatbot from another organization', function () 
 
 it('cannot view a conversation from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
-    $conv    = Conversation::factory()->withinOrganization($orgB)->create(['chatbot_id' => $chatbot->id]);
+    $conv = Conversation::factory()->withinOrganization($orgB)->create(['chatbot_id' => $chatbot->id]);
 
     $this->withHeaders(isolationHeaders($tokenA))
         ->getJson("/api/v1/conversations/{$conv->id}")
@@ -114,10 +114,10 @@ it('cannot view a conversation from another organization', function () {
 
 it('cannot resolve a conversation from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
-    $conv    = Conversation::factory()->withinOrganization($orgB)->create(['chatbot_id' => $chatbot->id]);
+    $conv = Conversation::factory()->withinOrganization($orgB)->create(['chatbot_id' => $chatbot->id]);
 
     $this->withHeaders(isolationHeaders($tokenA))
         ->postJson("/api/v1/conversations/{$conv->id}/resolve")
@@ -126,10 +126,10 @@ it('cannot resolve a conversation from another organization', function () {
 
 it('cannot take over a conversation from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
-    $conv    = Conversation::factory()->withinOrganization($orgB)->create(['chatbot_id' => $chatbot->id]);
+    $conv = Conversation::factory()->withinOrganization($orgB)->create(['chatbot_id' => $chatbot->id]);
 
     $this->withHeaders(isolationHeaders($tokenA))
         ->postJson("/api/v1/conversations/{$conv->id}/takeover")
@@ -140,7 +140,7 @@ it('cannot take over a conversation from another organization', function () {
 
 it('cannot revoke an API key from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $key = ApiKey::factory()->create(['organization_id' => $orgB->id]);
 
@@ -151,7 +151,7 @@ it('cannot revoke an API key from another organization', function () {
 
 it('API key list only returns keys for the current organization', function () {
     ['org' => $orgA, 'token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]                     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     ApiKey::factory()->create(['organization_id' => $orgA->id, 'name' => 'My Key']);
     ApiKey::factory()->create(['organization_id' => $orgB->id, 'name' => 'Other Org Key']);
@@ -169,7 +169,7 @@ it('API key list only returns keys for the current organization', function () {
 
 it('cannot fetch analytics for a chatbot from another organization', function () {
     ['token' => $tokenA] = isolationOrg();
-    ['org' => $orgB]     = isolationOrg();
+    ['org' => $orgB] = isolationOrg();
 
     $chatbot = Chatbot::factory()->for($orgB)->create();
 
@@ -181,7 +181,7 @@ it('cannot fetch analytics for a chatbot from another organization', function ()
 // ── Team / Members ────────────────────────────────────────────────────────────
 
 it('user A cannot remove a member from organization B', function () {
-    ['token' => $tokenA]     = isolationOrg();
+    ['token' => $tokenA] = isolationOrg();
     ['org' => $orgB, 'user' => $userB] = isolationOrg();
 
     $this->withHeaders(isolationHeaders($tokenA))

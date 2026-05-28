@@ -28,7 +28,7 @@ class TrackUsageJob implements ShouldQueue
     public function handle(PlanLimits $limits): void
     {
         $periodStart = now()->startOfMonth()->toDateString();
-        $periodEnd   = now()->endOfMonth()->toDateString();
+        $periodEnd = now()->endOfMonth()->toDateString();
 
         Organization::query()->withoutGlobalScopes()->each(function (Organization $org) use ($limits, $periodStart, $periodEnd): void {
             foreach (self::METRICS as $metric) {
@@ -38,20 +38,20 @@ class TrackUsageJob implements ShouldQueue
                     UsageRecord::withoutGlobalScopes()->updateOrCreate(
                         [
                             'organization_id' => $org->id,
-                            'metric'          => $metric,
-                            'period_start'    => $periodStart,
+                            'metric' => $metric,
+                            'period_start' => $periodStart,
                         ],
                         [
-                            'value'       => $value,
-                            'period_end'  => $periodEnd,
+                            'value' => $value,
+                            'period_end' => $periodEnd,
                             'recorded_at' => now(),
                         ],
                     );
                 } catch (\Throwable $e) {
                     Log::error('TrackUsageJob: failed to record usage', [
                         'organization_id' => $org->id,
-                        'metric'          => $metric,
-                        'error'           => $e->getMessage(),
+                        'metric' => $metric,
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }

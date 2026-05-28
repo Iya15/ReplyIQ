@@ -29,8 +29,8 @@ class ReplyIqCrawlProfile implements CrawlProfile
     public function shouldCrawl(string $url): bool
     {
         $parsed = parse_url($url);
-        $host   = $parsed['host'] ?? '';
-        $path   = $parsed['path'] ?? '/';
+        $host = $parsed['host'] ?? '';
+        $path = $parsed['path'] ?? '/';
 
         // Hard constraint: same domain only.
         if ($host !== $this->startHost) {

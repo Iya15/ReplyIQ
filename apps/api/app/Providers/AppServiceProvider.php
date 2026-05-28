@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Listeners\SyncSubscriptionPlan;
 use App\Models\Chatbot;
+use App\Models\Conversation;
 use App\Models\Document;
 use App\Models\Organization;
 use App\Policies\ChatbotPolicy;
+use App\Policies\ConversationPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\OrganizationPolicy;
 use App\Services\Ai\Contracts\LlmClient;
@@ -15,8 +17,6 @@ use App\Services\Billing\PlanLimits;
 use App\Services\Embedding\EmbeddingClient;
 use App\Services\Embedding\EmbeddingClientFactory;
 use Illuminate\Auth\Notifications\VerifyEmail;
-use App\Models\Conversation;
-use App\Policies\ConversationPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -96,7 +96,7 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(30)
                     ->by('msg-visitor:'.$convId)
                     ->response(fn () => response()->json([
-                        'error'   => 'rate_limited',
+                        'error' => 'rate_limited',
                         'message' => 'Too many messages. Please slow down.',
                     ], 429)),
                 Limit::perMinute(1000)

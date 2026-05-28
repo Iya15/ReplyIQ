@@ -2,10 +2,10 @@
 
 // @requires PostgreSQL with pgvector extension (CI/Docker only — needs chunks table for RAG)
 
+use App\Jobs\GenerateAiReplyJob;
 use App\Models\Chatbot;
 use App\Models\Conversation;
 use App\Models\Organization;
-use App\Services\Public\WidgetSessionToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -16,9 +16,10 @@ uses(RefreshDatabase::class);
 
 function flowChatbot(): array
 {
-    $org     = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $chatbot = Chatbot::factory()->for($org)->create(['status' => 'active']);
     $chatbot->load('settings');
+
     return [$org, $chatbot];
 }
 
@@ -31,13 +32,13 @@ function flowStart(Chatbot $chatbot, ?string $visitorId = null): array
     $visitorId ??= (string) Str::uuid();
 
     $response = test()->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
+        'public_id' => $chatbot->public_id,
         'visitor_id' => $visitorId,
     ]);
 
     return [
-        'conv_id'    => $response->json('data.id'),
-        'token'      => $response->json('session_token'),
+        'conv_id' => $response->json('data.id'),
+        'token' => $response->json('session_token'),
         'visitor_id' => $visitorId,
     ];
 }
@@ -54,7 +55,7 @@ it('creates a conversation and returns a session token', function () {
     [, $chatbot] = flowChatbot();
 
     $response = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
+        'public_id' => $chatbot->public_id,
         'visitor_id' => (string) Str::uuid(),
     ]);
 
@@ -67,10 +68,10 @@ it('creates a conversation and returns a session token', function () {
 it('stores the source_url on the conversation', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
+        'public_id' => $chatbot->public_id,
         'visitor_id' => $visitorId,
         'source_url' => 'https://example.com/pricing',
     ])->assertCreated();
@@ -86,12 +87,12 @@ it('stores the source_url on the conversation', function () {
 it('updateVisitor persists visitor email and name on the conversation', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $this->withHeaders(flowBearer($session['token']))
         ->patchJson("/api/v1/public/conversations/{$session['conv_id']}", [
             'visitor_email' => 'alice@example.com',
-            'visitor_name'  => 'Alice',
+            'visitor_name' => 'Alice',
         ])
         ->assertOk();
 
@@ -105,7 +106,7 @@ it('updateVisitor persists visitor email and name on the conversation', function
 it('sends a user message and returns a pending assistant message', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $response = $this->withHeaders(flowBearer($session['token']))
         ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
@@ -124,20 +125,20 @@ it('sends a user message and returns a pending assistant message', function () {
 it('dispatches GenerateAiReplyJob when a message is sent', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $this->withHeaders(flowBearer($session['token']))
         ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
             'content' => 'Hello',
         ])->assertStatus(202);
 
-    Queue::assertPushedOn('replies', \App\Jobs\GenerateAiReplyJob::class);
+    Queue::assertPushedOn('replies', GenerateAiReplyJob::class);
 });
 
 it('rejects a message with content exceeding 4000 characters', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $this->withHeaders(flowBearer($session['token']))
         ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
@@ -148,8 +149,8 @@ it('rejects a message with content exceeding 4000 characters', function () {
 it('returns 403 when a visitor uses their token to post to another visitors conversation', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $sessionA    = flowStart($chatbot);
-    $sessionB    = flowStart($chatbot);
+    $sessionA = flowStart($chatbot);
+    $sessionB = flowStart($chatbot);
 
     // Visitor B's token has visitor B's visitor_id; conv A belongs to visitor A.
     $this->withHeaders(flowBearer($sessionB['token']))
@@ -163,7 +164,7 @@ it('returns 403 when a visitor uses their token to post to another visitors conv
 it('returns all messages for a conversation in order', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $this->withHeaders(flowBearer($session['token']))
         ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
@@ -187,7 +188,7 @@ it('returns all messages for a conversation in order', function () {
 it('records helpful feedback on an assistant message', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $assistantMsgId = $this->withHeaders(flowBearer($session['token']))
         ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
@@ -203,7 +204,7 @@ it('records helpful feedback on an assistant message', function () {
 it('rejects feedback on a user message', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $userMsgId = $this->withHeaders(flowBearer($session['token']))
         ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
@@ -222,7 +223,7 @@ it('message status transitions from pending to complete after the job runs', fun
     config(['queue.default' => 'sync']);
 
     [, $chatbot] = flowChatbot();
-    $session     = flowStart($chatbot);
+    $session = flowStart($chatbot);
 
     $assistantId = $this->withHeaders(flowBearer($session['token']))
         ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [

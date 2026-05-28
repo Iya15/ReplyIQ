@@ -29,7 +29,7 @@ function unitVectorString(int $hot, int $size = 1536): string
     $values = array_fill(0, $size, 0.0);
     $values[$hot] = 1.0;
 
-    return '[' . implode(',', $values) . ']';
+    return '['.implode(',', $values).']';
 }
 
 /**
@@ -50,12 +50,16 @@ function unitVectorArray(int $hot, int $size = 1536): array
  */
 function makeRetriever(array $vector): RetrievalService
 {
-    $embedder = new class($vector) implements EmbeddingClient {
+    $embedder = new class($vector) implements EmbeddingClient
+    {
         /** @param float[] $v */
         public function __construct(private readonly array $v) {}
 
         /** @return float[] */
-        public function embed(string $text): array { return $this->v; }
+        public function embed(string $text): array
+        {
+            return $this->v;
+        }
 
         /** @return float[][] */
         public function embedBatch(array $texts): array
@@ -63,9 +67,15 @@ function makeRetriever(array $vector): RetrievalService
             return array_map(fn () => $this->v, $texts);
         }
 
-        public function dimension(): int { return count($this->v); }
+        public function dimension(): int
+        {
+            return count($this->v);
+        }
 
-        public function model(): string { return 'test'; }
+        public function model(): string
+        {
+            return 'test';
+        }
     };
 
     return new RetrievalService($embedder);
@@ -95,16 +105,16 @@ function insertTestChunk(
     $id = Str::uuid()->toString();
 
     DB::table('chunks')->insert([
-        'id'              => $id,
+        'id' => $id,
         'organization_id' => $orgId,
-        'chatbot_id'      => $chatbotId,
-        'document_id'     => $documentId,
-        'chunk_index'     => $index,
-        'content'         => $content,
-        'token_count'     => str_word_count($content),
-        'embedding'       => $embeddingVector,
-        'metadata'        => json_encode([]),
-        'created_at'      => now(),
+        'chatbot_id' => $chatbotId,
+        'document_id' => $documentId,
+        'chunk_index' => $index,
+        'content' => $content,
+        'token_count' => str_word_count($content),
+        'embedding' => $embeddingVector,
+        'metadata' => json_encode([]),
+        'created_at' => now(),
     ]);
 
     return $id;
@@ -114,9 +124,9 @@ function makeReadyDocument(string $orgId, string $chatbotId): Document
 {
     return Document::factory()->create([
         'organization_id' => $orgId,
-        'chatbot_id'      => $chatbotId,
-        'status'          => DocumentStatus::Ready,
-        'source_type'     => DocumentSourceType::Manual,
+        'chatbot_id' => $chatbotId,
+        'status' => DocumentStatus::Ready,
+        'source_type' => DocumentSourceType::Manual,
     ]);
 }
 
@@ -162,7 +172,7 @@ it('ranks chunks by descending similarity', function () {
     $blended = array_fill(0, 1536, 0.0);
     $blended[0] = 0.9;
     $blended[1] = sqrt(1 - 0.9 ** 2); // keep unit length
-    $blendedStr = '[' . implode(',', $blended) . ']';
+    $blendedStr = '['.implode(',', $blended).']';
 
     insertTestChunk($org->id, $chatbot->id, $doc->id, $blendedStr, 'Partial match content.', index: 1);
 
@@ -178,15 +188,15 @@ it('ignores chunks from documents that are not ready', function () {
 
     $pendingDoc = Document::factory()->create([
         'organization_id' => $org->id,
-        'chatbot_id'      => $chatbot->id,
-        'status'          => DocumentStatus::Pending,
-        'source_type'     => DocumentSourceType::Manual,
+        'chatbot_id' => $chatbot->id,
+        'status' => DocumentStatus::Pending,
+        'source_type' => DocumentSourceType::Manual,
     ]);
     $failedDoc = Document::factory()->create([
         'organization_id' => $org->id,
-        'chatbot_id'      => $chatbot->id,
-        'status'          => DocumentStatus::Failed,
-        'source_type'     => DocumentSourceType::Manual,
+        'chatbot_id' => $chatbot->id,
+        'status' => DocumentStatus::Failed,
+        'source_type' => DocumentSourceType::Manual,
     ]);
 
     insertTestChunk($org->id, $chatbot->id, $pendingDoc->id, unitVectorString(0), 'Pending chunk.');

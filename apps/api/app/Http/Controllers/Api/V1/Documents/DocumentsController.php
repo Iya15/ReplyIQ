@@ -70,8 +70,8 @@ class DocumentsController extends Controller
         $this->authorize('create', [Document::class, $chatbot]);
 
         $document = $svc->execute(
-            chatbot:  $chatbot,
-            url:      $r->string('url')->toString(),
+            chatbot: $chatbot,
+            url: $r->string('url')->toString(),
             maxPages: (int) $r->input('max_pages', 50),
         );
 

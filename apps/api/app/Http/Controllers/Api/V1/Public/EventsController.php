@@ -22,7 +22,7 @@ class EventsController extends Controller
     public function store(Request $request, AnalyticsRecorder $recorder): JsonResponse
     {
         $data = $request->validate([
-            'event_type' => ['required', 'string', 'in:' . implode(',', self::ALLOWED_EVENTS)],
+            'event_type' => ['required', 'string', 'in:'.implode(',', self::ALLOWED_EVENTS)],
             'visitor_id' => ['nullable', 'string', 'max:128'],
             'source_url' => ['nullable', 'url', 'max:2048'],
         ]);
@@ -31,9 +31,9 @@ class EventsController extends Controller
         $chatbot = app('currentChatbot');
 
         $recorder->record(
-            eventType:      $data['event_type'],
+            eventType: $data['event_type'],
             organizationId: (string) $chatbot->organization_id,
-            chatbotId:      (string) $chatbot->id,
+            chatbotId: (string) $chatbot->id,
             context: [
                 'visitor_id' => $data['visitor_id'] ?? null,
                 'source_url' => $data['source_url'] ?? null,

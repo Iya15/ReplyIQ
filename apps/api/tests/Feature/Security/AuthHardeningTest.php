@@ -59,9 +59,9 @@ it('register does not reveal the email-already-taken error specifically', functi
 it('registration rejects a password found in HIBP database', function () {
     // Fake HIBP returning a match: hash suffix of 'password' after first 5 chars
     $plainPw = 'password1234'; // commonly breached
-    $hash    = strtoupper(sha1($plainPw));
-    $suffix  = substr($hash, 5);
-    $prefix  = substr($hash, 0, 5);
+    $hash = strtoupper(sha1($plainPw));
+    $suffix = substr($hash, 5);
+    $prefix = substr($hash, 0, 5);
 
     Http::fake([
         "api.pwnedpasswords.com/range/{$prefix}" => Http::response("{$suffix}:5", 200),
@@ -71,7 +71,7 @@ it('registration rejects a password found in HIBP database', function () {
         'name' => 'Test User', 'email' => 'new@example.com',
         'password' => $plainPw, 'organization_name' => 'ACME',
     ])->assertUnprocessable()
-      ->assertJsonPath('errors.password.0', fn ($msg) => str_contains(strtolower((string) $msg), 'breach'));
+        ->assertJsonPath('errors.password.0', fn ($msg) => str_contains(strtolower((string) $msg), 'breach'));
 });
 
 it('registration allows a password not found in HIBP database', function () {
@@ -84,7 +84,7 @@ it('registration allows a password not found in HIBP database', function () {
 });
 
 it('registration continues when HIBP API is unreachable (fail-open)', function () {
-    Http::fake(['api.pwnedpasswords.com/*' => fn () => throw new \Exception('network error')]);
+    Http::fake(['api.pwnedpasswords.com/*' => fn () => throw new Exception('network error')]);
 
     $this->postJson('/api/v1/auth/register', [
         'name' => 'Test User', 'email' => 'failopen@example.com',

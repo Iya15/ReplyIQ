@@ -122,7 +122,6 @@ class ProcessDocumentJob implements ShouldQueue
             ]);
 
             throw $e;
-
         } finally {
             if ($tempPath !== null && file_exists($tempPath)) {
                 @unlink($tempPath);
@@ -166,9 +165,9 @@ class ProcessDocumentJob implements ShouldQueue
         file_put_contents($tempPath, $contents);
 
         $extractor = match ($this->document->source_type) {
-            DocumentSourceType::Pdf => new PdfExtractor(),
-            DocumentSourceType::Docx => new DocxExtractor(),
-            DocumentSourceType::Txt => new TxtExtractor(),
+            DocumentSourceType::Pdf => new PdfExtractor,
+            DocumentSourceType::Docx => new DocxExtractor,
+            DocumentSourceType::Txt => new TxtExtractor,
             default => throw new \RuntimeException('Unreachable'),
         };
 
@@ -179,7 +178,7 @@ class ProcessDocumentJob implements ShouldQueue
     private function formatVector(array $values): string
     {
         return '['.implode(',', array_map(
-            fn(float $v): string => rtrim(rtrim(number_format($v, 10, '.', ''), '0'), '.'),
+            fn (float $v): string => rtrim(rtrim(number_format($v, 10, '.', ''), '0'), '.'),
             $values,
         )).']';
     }

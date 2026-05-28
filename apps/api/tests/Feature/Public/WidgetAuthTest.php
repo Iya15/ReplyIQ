@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 function authChatbot(array $settingsOverrides = []): array
 {
-    $org     = Organization::factory()->create();
+    $org = Organization::factory()->create();
     $chatbot = Chatbot::factory()->for($org)->create(['status' => 'active']);
 
     if ($settingsOverrides) {
@@ -24,6 +24,7 @@ function authChatbot(array $settingsOverrides = []): array
     }
 
     $chatbot->load('settings');
+
     return [$org, $chatbot];
 }
 
@@ -36,10 +37,10 @@ function makeSessionToken(Chatbot $chatbot, string $conversationId, string $visi
 
 it('creates a conversation without auth headers and returns a session token', function () {
     [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $response = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
+        'public_id' => $chatbot->public_id,
         'visitor_id' => $visitorId,
     ]);
 
@@ -53,12 +54,12 @@ it('creates a conversation without auth headers and returns a session token', fu
 
 it('returns 401 when no Bearer token is provided on a token-protected endpoint', function () {
     [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
 
     $this->getJson("/api/v1/public/conversations/{$conversation->id}/messages")
@@ -68,12 +69,12 @@ it('returns 401 when no Bearer token is provided on a token-protected endpoint',
 
 it('returns 401 when the Bearer token is malformed', function () {
     [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
 
     $this->withHeaders(['Authorization' => 'Bearer not.a.valid.jwt'])
@@ -84,20 +85,20 @@ it('returns 401 when the Bearer token is malformed', function () {
 
 it('returns 401 when the Bearer token is signed with the wrong key', function () {
     [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
 
-    $fakeKey  = InMemory::plainText(str_repeat('x', 32));
-    $config   = Configuration::forSymmetricSigner(new Sha256(), $fakeKey);
+    $fakeKey = InMemory::plainText(str_repeat('x', 32));
+    $config = Configuration::forSymmetricSigner(new Sha256, $fakeKey);
     $badToken = $config->builder()
         ->issuedBy('replyiq.widget')
-        ->issuedAt(new DateTimeImmutable())
-        ->expiresAt((new DateTimeImmutable())->modify('+24 hours'))
+        ->issuedAt(new DateTimeImmutable)
+        ->expiresAt((new DateTimeImmutable)->modify('+24 hours'))
         ->withClaim('cid', $chatbot->public_id)
         ->withClaim('cnv', (string) $conversation->id)
         ->withClaim('vid', $visitorId)
@@ -112,12 +113,12 @@ it('returns 401 when the Bearer token is signed with the wrong key', function ()
 
 it('accepts a valid session token on a token-protected endpoint', function () {
     [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
+        'chatbot_id' => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorId,
+        'visitor_id' => $visitorId,
     ]);
 
     $token = makeSessionToken($chatbot, (string) $conversation->id, $visitorId);
@@ -131,20 +132,20 @@ it('accepts a valid session token on a token-protected endpoint', function () {
 
 it('allows a request from a permitted domain', function () {
     [, $chatbot] = authChatbot(['allowed_domains' => ['mystore.com']]);
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
+        'public_id' => $chatbot->public_id,
         'visitor_id' => $visitorId,
     ], ['Origin' => 'https://mystore.com'])->assertCreated();
 });
 
 it('blocks a request from a non-permitted domain when allowed_domains is set', function () {
     [, $chatbot] = authChatbot(['allowed_domains' => ['mystore.com']]);
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
+        'public_id' => $chatbot->public_id,
         'visitor_id' => $visitorId,
     ], ['Origin' => 'https://phishing.com'])
         ->assertUnauthorized()
@@ -153,10 +154,10 @@ it('blocks a request from a non-permitted domain when allowed_domains is set', f
 
 it('allows any origin when allowed_domains is empty', function () {
     [, $chatbot] = authChatbot(['allowed_domains' => []]);
-    $visitorId   = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
+        'public_id' => $chatbot->public_id,
         'visitor_id' => $visitorId,
     ], ['Origin' => 'https://any-random-site.com'])->assertCreated();
 });

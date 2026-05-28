@@ -14,12 +14,12 @@ class InvitationResource extends JsonResource
         $inv = $this->resource;
 
         return [
-            'id'           => (string) $inv->id,
-            'email'        => (string) $inv->email,
-            'role'         => (string) $inv->role,
-            'expires_at'   => $inv->expires_at,
-            'created_at'   => $inv->created_at,
-            'invited_by'   => $this->whenLoaded('invitedBy', fn () => UserResource::make($inv->invitedBy)),
+            'id' => (string) $inv->id,
+            'email' => (string) $inv->email,
+            'role' => (string) $inv->role,
+            'expires_at' => $inv->expires_at,
+            'created_at' => $inv->created_at,
+            'invited_by' => $this->whenLoaded('invitedBy', fn () => UserResource::make($inv->invitedBy)),
         ];
     }
 }

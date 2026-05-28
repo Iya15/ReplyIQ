@@ -16,7 +16,7 @@ class RegisterUserService
 {
     public function __construct(
         private readonly PasswordBreachChecker $breachChecker,
-        private readonly OnboardingService     $onboarding,
+        private readonly OnboardingService $onboarding,
     ) {}
 
     public function execute(array $data): User
@@ -70,7 +70,8 @@ class RegisterUserService
             // Send welcome email (fail-open).
             try {
                 $user->notify(new WelcomeNotification($user));
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
 
             return $user;
         });

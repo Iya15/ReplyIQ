@@ -89,7 +89,7 @@ export default function PrivacyPage() {
 
         <h2>7. Third-Party Services</h2>
         <ul>
-          <li><strong>OpenAI</strong> — for AI inference. Your documents are sent to OpenAI's API but are not used to train their models (per their API data usage policy).</li>
+          <li><strong>OpenAI</strong> — for AI inference. Your documents are sent to OpenAI&apos;s API but are not used to train their models (per their API data usage policy).</li>
           <li><strong>Stripe</strong> — for payment processing. Stripe has its own Privacy Policy.</li>
           <li><strong>Sentry</strong> — for error monitoring. Error reports may include stack traces and request metadata.</li>
           <li><strong>Better Stack</strong> — for log aggregation. Logs may include request IDs and error messages.</li>

@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\Style\Font;
 
 /**
  * Generates binary test fixtures (sample.pdf, sample.docx) in tests/fixtures/.
@@ -83,12 +83,12 @@ class MakeTestFixturesCommand extends Command
         $stream .= "ET\n";
 
         $objs = [
-            1 => "<</Type /Catalog /Pages 2 0 R /Info 6 0 R>>",
-            2 => "<</Type /Pages /Kids [3 0 R] /Count 1>>",
-            3 => "<</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources <</Font <</F1 5 0 R>>>>>>",
-            4 => "<</Length ".strlen($stream).">>\nstream\n".$stream."endstream",
-            5 => "<</Type /Font /Subtype /Type1 /BaseFont /Helvetica>>",
-            6 => "<</Title (ReplyIQ Help Center)>>",
+            1 => '<</Type /Catalog /Pages 2 0 R /Info 6 0 R>>',
+            2 => '<</Type /Pages /Kids [3 0 R] /Count 1>>',
+            3 => '<</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources <</Font <</F1 5 0 R>>>>>>',
+            4 => '<</Length '.strlen($stream).">>\nstream\n".$stream.'endstream',
+            5 => '<</Type /Font /Subtype /Type1 /BaseFont /Helvetica>>',
+            6 => '<</Title (ReplyIQ Help Center)>>',
         ];
 
         $raw = "%PDF-1.4\n";
@@ -116,7 +116,7 @@ class MakeTestFixturesCommand extends Command
 
     private function writeDocx(string $dir, string $content): void
     {
-        $phpWord = new PhpWord();
+        $phpWord = new PhpWord;
         $section = $phpWord->addSection();
 
         $paragraphs = explode("\n\n", $content);
@@ -142,7 +142,7 @@ class MakeTestFixturesCommand extends Command
             }
         }
 
-        $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+        $writer = IOFactory::createWriter($phpWord, 'Word2007');
         $writer->save("{$dir}/sample.docx");
         $this->line('  ✓ sample.docx');
     }

@@ -18,19 +18,19 @@ uses(RefreshDatabase::class);
  */
 function makeBuilderChatbot(array $settingsOverrides = []): array
 {
-    $org     = Organization::factory()->create(['name' => 'Acme Corp']);
+    $org = Organization::factory()->create(['name' => 'Acme Corp']);
     $chatbot = Chatbot::factory()->for($org)->create(['name' => 'SupportBot']);
 
     // ChatbotObserver creates the settings row automatically; we just update it.
     $chatbot->settings->update(array_merge([
-        'ai_tone'         => 'professional and concise',
-        'ai_persona'      => 'A friendly support specialist',
+        'ai_tone' => 'professional and concise',
+        'ai_persona' => 'A friendly support specialist',
         'fallback_message' => 'I cannot answer that question right now.',
     ], $settingsOverrides));
 
     $chatbot->load(['settings', 'organization']);
 
-    return [$chatbot, new PromptBuilder()];
+    return [$chatbot, new PromptBuilder];
 }
 
 /**
@@ -39,11 +39,11 @@ function makeBuilderChatbot(array $settingsOverrides = []): array
 function makeChunkCollection(string ...$contents): Collection
 {
     return collect($contents)->values()->map(fn (string $c, int $i) => new RetrievedChunk(
-        id:          (string) $i,
-        content:     $c,
-        similarity:  0.9,
-        document_id: 'doc-' . $i,
-        metadata:    [],
+        id: (string) $i,
+        content: $c,
+        similarity: 0.9,
+        document_id: 'doc-'.$i,
+        metadata: [],
     ));
 }
 
@@ -122,7 +122,7 @@ it('wraps the current query in <<<USER>>> ... <<<END>>> delimiters', function ()
     [$chatbot, $builder] = makeBuilderChatbot();
 
     $messages = $builder->build($chatbot, 'What are your hours?', collect());
-    $last     = end($messages);
+    $last = end($messages);
 
     expect($last['role'])->toBe('user')
         ->and($last['content'])->toContain("<<<USER>>>\nWhat are your hours?\n<<<END>>>");

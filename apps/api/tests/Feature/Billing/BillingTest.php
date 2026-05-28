@@ -3,12 +3,13 @@
 // @requires PostgreSQL (CI/Docker only)
 
 use App\Billing\Plans;
+use App\Listeners\SyncSubscriptionPlan;
+use App\Models\Chatbot;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\Billing\PlanLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
 use Laravel\Cashier\Events\WebhookHandled;
 
 uses(RefreshDatabase::class);
@@ -17,15 +18,16 @@ uses(RefreshDatabase::class);
 
 function billingOrg(string $plan = Plans::FREE): array
 {
-    $org  = Organization::factory()->create(['plan' => $plan]);
+    $org = Organization::factory()->create(['plan' => $plan]);
     $user = User::factory()->create();
     Membership::factory()->create(['organization_id' => $org->id, 'user_id' => $user->id, 'role' => 'owner']);
+
     return compact('org', 'user');
 }
 
 function billingHeaders(User $user): array
 {
-    return ['Authorization' => 'Bearer ' . $user->createToken('test')->plainTextToken];
+    return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
 }
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
@@ -100,7 +102,7 @@ it('creating a chatbot when at the free limit returns 402', function () {
     ['org' => $org, 'user' => $user] = billingOrg(Plans::FREE);
 
     // Create one chatbot (hitting free limit of 1).
-    \App\Models\Chatbot::factory()->create(['organization_id' => $org->id, 'status' => 'active']);
+    Chatbot::factory()->create(['organization_id' => $org->id, 'status' => 'active']);
 
     $this->withHeaders(billingHeaders($user))
         ->postJson('/api/v1/chatbots', ['name' => 'Over limit'])
@@ -127,7 +129,7 @@ it('syncs plan to free when subscription is deleted', function () {
         'data' => ['object' => ['customer' => 'cus_test123', 'status' => 'canceled']],
     ]);
 
-    app(\App\Listeners\SyncSubscriptionPlan::class)->handle($event);
+    app(SyncSubscriptionPlan::class)->handle($event);
 
     expect($org->fresh()->plan)->toBe(Plans::FREE);
 });
@@ -142,12 +144,12 @@ it('syncs plan from stripe price on subscription updated', function () {
         'type' => 'customer.subscription.updated',
         'data' => ['object' => [
             'customer' => 'cus_test456',
-            'status'   => 'active',
-            'items'    => ['data' => [['price' => ['id' => 'price_pro_123']]]],
+            'status' => 'active',
+            'items' => ['data' => [['price' => ['id' => 'price_pro_123']]]],
         ]],
     ]);
 
-    app(\App\Listeners\SyncSubscriptionPlan::class)->handle($event);
+    app(SyncSubscriptionPlan::class)->handle($event);
 
     expect($org->fresh()->plan)->toBe(Plans::PRO);
 });

@@ -1,25 +1,25 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\ApiKeys\ApiKeysController;
-use App\Http\Controllers\Api\V1\Gdpr\DataDeletionController;
+use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Billing\BillingController;
-use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Chatbots\AnalyticsController;
-use App\Http\Controllers\Api\V1\Conversations\HandoffController;
-use App\Http\Controllers\Api\V1\Public\HandoffController as PublicHandoffController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
+use App\Http\Controllers\Api\V1\Conversations\ConversationsController;
+use App\Http\Controllers\Api\V1\Conversations\HandoffController;
+use App\Http\Controllers\Api\V1\Documents\DocumentsController;
+use App\Http\Controllers\Api\V1\Gdpr\DataDeletionController;
 use App\Http\Controllers\Api\V1\Invitations\AcceptController as InvitationAcceptController;
 use App\Http\Controllers\Api\V1\Organization\InvitationsController as OrgInvitationsController;
 use App\Http\Controllers\Api\V1\Organization\MembersController as OrgMembersController;
-use App\Http\Controllers\Api\V1\Conversations\ConversationsController;
-use App\Http\Controllers\Api\V1\Documents\DocumentsController;
 use App\Http\Controllers\Api\V1\Public\BroadcastingAuthController as PublicBroadcastingAuthController;
 use App\Http\Controllers\Api\V1\Public\ChatbotsController as PublicChatbotsController;
 use App\Http\Controllers\Api\V1\Public\ConversationsController as PublicConversationsController;
 use App\Http\Controllers\Api\V1\Public\EventsController as PublicEventsController;
+use App\Http\Controllers\Api\V1\Public\HandoffController as PublicHandoffController;
 use App\Http\Controllers\Api\V1\Public\MessagesController as PublicMessagesController;
+use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -72,7 +72,7 @@ Route::prefix('v1')->group(function () {
         ->name('gdpr.data-deletion');
 
     // ── Team management (invitation accept — no auth required) ────────────────
-    Route::get('invitations/{token}',        [InvitationAcceptController::class, 'show']);
+    Route::get('invitations/{token}', [InvitationAcceptController::class, 'show']);
     Route::post('invitations/{token}/accept', [InvitationAcceptController::class, 'store']);
 
     // ── Chatbots ──────────────────────────────────────────────────────────────
@@ -87,9 +87,9 @@ Route::prefix('v1')->group(function () {
 
         // ── Billing ───────────────────────────────────────────────────────────
         Route::prefix('billing')->group(function () {
-            Route::get('subscription',      [BillingController::class, 'subscription']);
+            Route::get('subscription', [BillingController::class, 'subscription']);
             Route::post('checkout-session', [BillingController::class, 'checkoutSession']);
-            Route::post('portal-session',   [BillingController::class, 'portalSession']);
+            Route::post('portal-session', [BillingController::class, 'portalSession']);
         });
 
         // ── API Keys ──────────────────────────────────────────────────────────
@@ -97,19 +97,19 @@ Route::prefix('v1')->group(function () {
 
         // ── Team ──────────────────────────────────────────────────────────────
         Route::prefix('organizations/current')->group(function () {
-            Route::get('members',                        [OrgMembersController::class, 'index']);
-            Route::patch('members/{user_id}',            [OrgMembersController::class, 'update']);
-            Route::delete('members/{user_id}',           [OrgMembersController::class, 'destroy']);
-            Route::get('invitations',                    [OrgInvitationsController::class, 'index']);
-            Route::post('invitations',                   [OrgInvitationsController::class, 'store']);
+            Route::get('members', [OrgMembersController::class, 'index']);
+            Route::patch('members/{user_id}', [OrgMembersController::class, 'update']);
+            Route::delete('members/{user_id}', [OrgMembersController::class, 'destroy']);
+            Route::get('invitations', [OrgInvitationsController::class, 'index']);
+            Route::post('invitations', [OrgInvitationsController::class, 'store']);
             Route::delete('invitations/{invitation_id}', [OrgInvitationsController::class, 'destroy']);
         });
 
         // ── Analytics ─────────────────────────────────────────────────────────
-        Route::get('chatbots/{chatbot}/analytics/overview',     [AnalyticsController::class, 'overview']);
+        Route::get('chatbots/{chatbot}/analytics/overview', [AnalyticsController::class, 'overview']);
         Route::get('chatbots/{chatbot}/analytics/conversations', [AnalyticsController::class, 'conversations']);
-        Route::get('chatbots/{chatbot}/analytics/topics',       [AnalyticsController::class, 'topics']);
-        Route::get('chatbots/{chatbot}/analytics/unanswered',   [AnalyticsController::class, 'unanswered']);
+        Route::get('chatbots/{chatbot}/analytics/topics', [AnalyticsController::class, 'topics']);
+        Route::get('chatbots/{chatbot}/analytics/unanswered', [AnalyticsController::class, 'unanswered']);
 
         // ── Conversations ──────────────────────────────────────────────────────
         Route::get('chatbots/{chatbot}/conversations', [ConversationsController::class, 'index']);

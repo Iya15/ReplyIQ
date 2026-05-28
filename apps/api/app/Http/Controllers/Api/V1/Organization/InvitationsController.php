@@ -7,6 +7,7 @@ use App\Http\Requests\Team\InviteMemberRequest;
 use App\Http\Resources\InvitationResource;
 use App\Models\Invitation;
 use App\Models\Organization;
+use App\Models\User;
 use App\Services\Team\InviteUserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,14 +41,14 @@ class InvitationsController extends Controller
 
         $this->authorize('invite', $org);
 
-        /** @var \App\Models\User $inviter */
+        /** @var User $inviter */
         $inviter = $r->user();
 
         $invitation = $svc->execute(
-            org:     $org,
+            org: $org,
             inviter: $inviter,
-            email:   (string) $r->validated('email'),
-            role:    (string) $r->validated('role'),
+            email: (string) $r->validated('email'),
+            role: (string) $r->validated('role'),
         );
 
         return $this->ok(

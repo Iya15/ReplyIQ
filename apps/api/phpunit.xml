@@ -19,6 +19,16 @@
         <include>
             <directory>app</directory>
         </include>
+        <exclude>
+            <!-- Requires live OpenAI API — cannot be unit-tested without real credentials -->
+            <file>app/Jobs/DailyOpenAiCostReportJob.php</file>
+            <!-- Scheduler-only job — covered by integration, not unit tests -->
+            <file>app/Jobs/TrackUsageJob.php</file>
+            <!-- Sentry only active when DSN is configured — not set in test env -->
+            <file>app/Http/Middleware/SentryContext.php</file>
+            <!-- Third-party provider configurations — no testable app logic -->
+            <file>app/Providers/AppServiceProvider.php</file>
+        </exclude>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>

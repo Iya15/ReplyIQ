@@ -7,7 +7,8 @@ use Illuminate\Console\Command;
 
 class FlushAnalyticsCommand extends Command
 {
-    protected $signature   = 'analytics:flush';
+    protected $signature = 'analytics:flush';
+
     protected $description = 'Flush buffered analytics events from Redis into PostgreSQL';
 
     public function handle(AnalyticsRecorder $recorder): int

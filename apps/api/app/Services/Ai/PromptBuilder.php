@@ -22,8 +22,8 @@ class PromptBuilder
      *  [1..N] user/assistant — last HISTORY_LIMIT turns from prior conversation
      *  [N+1] user   — current query wrapped in <<<USER>>>...<<<END>>> delimiters
      *
-     * @param  Collection<int, RetrievedChunk>                     $chunks
-     * @param  array<int, array{role: string, content: string}>    $history  Most-recent last.
+     * @param  Collection<int, RetrievedChunk>  $chunks
+     * @param  array<int, array{role: string, content: string}>  $history  Most-recent last.
      * @return array<int, array{role: string, content: string}>
      */
     public function build(
@@ -33,19 +33,19 @@ class PromptBuilder
         array $history = [],
     ): array {
         $settings = $chatbot->settings;
-        $org      = $chatbot->organization;
+        $org = $chatbot->organization;
 
         $chunksJoined = $chunks->isNotEmpty()
             ? $chunks->map(fn (RetrievedChunk $c) => $c->content)->implode("\n\n---\n\n")
             : self::NO_CONTEXT_MARKER;
 
-        $template     = File::get(resource_path('prompts/system.blade.php'));
+        $template = File::get(resource_path('prompts/system.blade.php'));
         $systemPrompt = Blade::render($template, [
-            'chatbot_name'            => $chatbot->name,
-            'organization_name'       => $org->name,
-            'ai_tone'                 => $settings?->ai_tone ?? 'professional and friendly',
-            'ai_persona'              => $settings?->ai_persona ?? '',
-            'fallback_message'        => $settings?->fallback_message
+            'chatbot_name' => $chatbot->name,
+            'organization_name' => $org->name,
+            'ai_tone' => $settings?->ai_tone ?? 'professional and friendly',
+            'ai_persona' => $settings?->ai_persona ?? '',
+            'fallback_message' => $settings?->fallback_message
                 ?? "I'm sorry, I don't have enough information to answer that question.",
             'retrieved_chunks_joined' => $chunksJoined,
         ]);
@@ -57,7 +57,7 @@ class PromptBuilder
         }
 
         $messages[] = [
-            'role'    => 'user',
+            'role' => 'user',
             'content' => "<<<USER>>>\n{$query}\n<<<END>>>",
         ];
 

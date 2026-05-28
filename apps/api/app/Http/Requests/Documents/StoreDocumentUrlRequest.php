@@ -14,7 +14,7 @@ class StoreDocumentUrlRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'url'       => ['required', 'url', 'max:2000'],
+            'url' => ['required', 'url', 'max:2000'],
             'max_pages' => ['sometimes', 'integer', 'min:1', 'max:200'],
         ];
     }

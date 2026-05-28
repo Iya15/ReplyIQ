@@ -14,13 +14,13 @@ class ApiKeyResource extends JsonResource
         $key = $this->resource;
 
         return [
-            'id'           => (string) $key->id,
-            'name'         => (string) $key->name,
-            'prefix'       => (string) $key->prefix,
+            'id' => (string) $key->id,
+            'name' => (string) $key->name,
+            'prefix' => (string) $key->prefix,
             'last_used_at' => $key->last_used_at,
-            'created_at'   => $key->created_at,
+            'created_at' => $key->created_at,
             // Included only immediately after creation — never shown again.
-            'key'          => $this->when($key->plainKey !== null, $key->plainKey),
+            'key' => $this->when($key->plainKey !== null, $key->plainKey),
         ];
     }
 }

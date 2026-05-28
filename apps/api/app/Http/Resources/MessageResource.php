@@ -14,11 +14,11 @@ class MessageResource extends JsonResource
         $msg = $this->resource;
 
         return [
-            'id'         => $msg->id,
-            'role'       => $msg->role->value,
-            'content'    => $msg->content,
-            'status'     => $msg->status->value,
-            'sources'    => $msg->sources ?? [],
+            'id' => $msg->id,
+            'role' => $msg->role->value,
+            'content' => $msg->content,
+            'status' => $msg->status->value,
+            'sources' => $msg->sources ?? [],
             'confidence' => $msg->confidence,
             'created_at' => $msg->created_at,
         ];

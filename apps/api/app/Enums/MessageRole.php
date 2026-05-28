@@ -4,8 +4,8 @@ namespace App\Enums;
 
 enum MessageRole: string
 {
-    case User      = 'user';
+    case User = 'user';
     case Assistant = 'assistant';
-    case Agent     = 'agent';
-    case System    = 'system';
+    case Agent = 'agent';
+    case System = 'system';
 }

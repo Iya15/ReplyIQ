@@ -6,7 +6,6 @@ use App\Jobs\ProcessDocumentJob;
 use App\Models\Chatbot;
 use App\Models\Chunk;
 use App\Models\Document;
-use App\Models\Membership;
 use App\Models\Organization;
 use App\Repositories\DocumentRepository;
 use App\Services\Embedding\EmbeddingClient;
@@ -21,7 +20,8 @@ uses(RefreshDatabase::class);
 
 function fakeEmbedder(): EmbeddingClient
 {
-    return new class implements EmbeddingClient {
+    return new class implements EmbeddingClient
+    {
         public function embed(string $text): array
         {
             return array_fill(0, 1536, 0.1);
@@ -29,12 +29,18 @@ function fakeEmbedder(): EmbeddingClient
 
         public function embedBatch(array $texts): array
         {
-            return array_map(fn() => array_fill(0, 1536, 0.1), $texts);
+            return array_map(fn () => array_fill(0, 1536, 0.1), $texts);
         }
 
-        public function dimension(): int { return 1536; }
+        public function dimension(): int
+        {
+            return 1536;
+        }
 
-        public function model(): string { return 'test-model'; }
+        public function model(): string
+        {
+            return 'test-model';
+        }
     };
 }
 
@@ -109,7 +115,7 @@ it('chunks have embeddings and correct metadata model after ingestion', function
 it('ingests manual text and produces ready document with chunks', function () {
     [$org, $chatbot] = makeOrganizationWithChatbot();
 
-    $service = new IngestManualTextService();
+    $service = new IngestManualTextService;
     Queue::fake();
 
     $document = $service->execute(
@@ -145,7 +151,7 @@ it('marks document as failed when storage file does not exist', function () {
         'status' => DocumentStatus::Pending,
     ]);
 
-    expect(fn() => runJob($document))->toThrow(\Throwable::class);
+    expect(fn () => runJob($document))->toThrow(Throwable::class);
 
     $document->refresh();
 
@@ -166,19 +172,32 @@ it('marks document as failed when embedding throws', function () {
         'status' => DocumentStatus::Pending,
     ]);
 
-    $brokenEmbedder = new class implements EmbeddingClient {
-        public function embed(string $text): array { throw new \RuntimeException('OpenAI down'); }
+    $brokenEmbedder = new class implements EmbeddingClient
+    {
+        public function embed(string $text): array
+        {
+            throw new RuntimeException('OpenAI down');
+        }
 
-        public function embedBatch(array $texts): array { throw new \RuntimeException('OpenAI down'); }
+        public function embedBatch(array $texts): array
+        {
+            throw new RuntimeException('OpenAI down');
+        }
 
-        public function dimension(): int { return 1536; }
+        public function dimension(): int
+        {
+            return 1536;
+        }
 
-        public function model(): string { return 'test-model'; }
+        public function model(): string
+        {
+            return 'test-model';
+        }
     };
 
     app()->instance(EmbeddingClient::class, $brokenEmbedder);
 
-    expect(fn() => app()->call([new ProcessDocumentJob($document), 'handle']))->toThrow(\Throwable::class);
+    expect(fn () => app()->call([new ProcessDocumentJob($document), 'handle']))->toThrow(Throwable::class);
 
     $document->refresh();
 
@@ -204,7 +223,7 @@ it('reprocess deletes old chunks and dispatches a new job', function () {
 
     Queue::fake();
 
-    (new DocumentRepository())->reprocess($document);
+    (new DocumentRepository)->reprocess($document);
 
     expect(Chunk::withoutGlobalScopes()->where('document_id', $document->id)->count())->toBe(0);
 

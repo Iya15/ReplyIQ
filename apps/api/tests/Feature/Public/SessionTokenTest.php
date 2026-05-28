@@ -12,7 +12,7 @@ uses(RefreshDatabase::class);
 // ── Issue ─────────────────────────────────────────────────────────────────────
 
 it('issues a JWT string with three dot-separated segments', function () {
-    $svc   = app(WidgetSessionToken::class);
+    $svc = app(WidgetSessionToken::class);
     $token = $svc->issue('pub-id', (string) Str::uuid(), (string) Str::uuid());
 
     expect($token)->toBeString()
@@ -22,10 +22,10 @@ it('issues a JWT string with three dot-separated segments', function () {
 // ── Verify — valid token ──────────────────────────────────────────────────────
 
 it('verify returns correct claims from a freshly issued token', function () {
-    $svc            = app(WidgetSessionToken::class);
-    $chatbotId      = 'pub-' . Str::random(8);
+    $svc = app(WidgetSessionToken::class);
+    $chatbotId = 'pub-'.Str::random(8);
     $conversationId = (string) Str::uuid();
-    $visitorId      = (string) Str::uuid();
+    $visitorId = (string) Str::uuid();
 
     $claims = $svc->verify($svc->issue($chatbotId, $conversationId, $visitorId));
 
@@ -47,12 +47,12 @@ it('verify returns null for a malformed token string', function () {
 
 it('verify returns null for a token signed with the wrong key', function () {
     $wrongKey = InMemory::plainText(str_repeat('x', 32));
-    $config   = Configuration::forSymmetricSigner(new Sha256(), $wrongKey);
+    $config = Configuration::forSymmetricSigner(new Sha256, $wrongKey);
 
     $forgedToken = $config->builder()
         ->issuedBy('replyiq.widget')
-        ->issuedAt(new DateTimeImmutable())
-        ->expiresAt((new DateTimeImmutable())->modify('+24 hours'))
+        ->issuedAt(new DateTimeImmutable)
+        ->expiresAt((new DateTimeImmutable)->modify('+24 hours'))
         ->withClaim('cid', 'pub-id')
         ->withClaim('cnv', (string) Str::uuid())
         ->withClaim('vid', (string) Str::uuid())
@@ -64,15 +64,15 @@ it('verify returns null for a token signed with the wrong key', function () {
 
 it('verify returns null for a token with the wrong issuer', function () {
     $appKey = (string) config('app.key');
-    $key    = str_starts_with($appKey, 'base64:')
+    $key = str_starts_with($appKey, 'base64:')
         ? InMemory::base64Encoded(substr($appKey, 7))
         : InMemory::plainText($appKey);
-    $config = Configuration::forSymmetricSigner(new Sha256(), $key);
+    $config = Configuration::forSymmetricSigner(new Sha256, $key);
 
     $wrongIssuerToken = $config->builder()
         ->issuedBy('evil.issuer')
-        ->issuedAt(new DateTimeImmutable())
-        ->expiresAt((new DateTimeImmutable())->modify('+24 hours'))
+        ->issuedAt(new DateTimeImmutable)
+        ->expiresAt((new DateTimeImmutable)->modify('+24 hours'))
         ->withClaim('cid', 'pub-id')
         ->withClaim('cnv', (string) Str::uuid())
         ->withClaim('vid', (string) Str::uuid())
@@ -84,10 +84,10 @@ it('verify returns null for a token with the wrong issuer', function () {
 
 it('verify returns null for an expired token', function () {
     $appKey = (string) config('app.key');
-    $key    = str_starts_with($appKey, 'base64:')
+    $key = str_starts_with($appKey, 'base64:')
         ? InMemory::base64Encoded(substr($appKey, 7))
         : InMemory::plainText($appKey);
-    $config = Configuration::forSymmetricSigner(new Sha256(), $key);
+    $config = Configuration::forSymmetricSigner(new Sha256, $key);
 
     $expiredToken = $config->builder()
         ->issuedBy('replyiq.widget')

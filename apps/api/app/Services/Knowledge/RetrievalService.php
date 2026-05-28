@@ -108,6 +108,6 @@ class RetrievalService
      */
     private function formatVector(array $values): string
     {
-        return '[' . implode(',', $values) . ']';
+        return '['.implode(',', $values).']';
     }
 }

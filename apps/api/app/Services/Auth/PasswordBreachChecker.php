@@ -20,14 +20,14 @@ class PasswordBreachChecker
 
     public function isBreached(string $password): bool
     {
-        $hash   = strtoupper(sha1($password));
+        $hash = strtoupper(sha1($password));
         $prefix = substr($hash, 0, 5);
         $suffix = substr($hash, 5);
 
         try {
             $response = Http::timeout(3)
                 ->withHeaders(['Add-Padding' => 'true'])
-                ->get(self::HIBP_URL . $prefix);
+                ->get(self::HIBP_URL.$prefix);
 
             if (! $response->ok()) {
                 return false; // fail-open on API error

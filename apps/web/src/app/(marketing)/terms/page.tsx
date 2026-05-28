@@ -54,7 +54,7 @@ export default function TermsPage() {
 
         <h2>5. Plan Limits</h2>
         <p>
-          Usage is subject to the limits of your plan. If you exceed your plan's limits, the service
+          Usage is subject to the limits of your plan. If you exceed your plan&apos;s limits, the service
           may restrict new conversations or messages until the next billing period or you upgrade.
         </p>
 

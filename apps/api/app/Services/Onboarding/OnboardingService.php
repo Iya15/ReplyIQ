@@ -6,6 +6,7 @@ use App\Models\Chatbot;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\Knowledge\IngestManualTextService;
+use Illuminate\Support\Str;
 
 /**
  * Seeds a sample chatbot with demo FAQ content for new users.
@@ -22,10 +23,10 @@ class OnboardingService
         // Create the sample chatbot
         $chatbot = Chatbot::create([
             'organization_id' => $org->id,
-            'name'            => 'Acme Support Bot',
-            'public_id'       => \Illuminate\Support\Str::random(12),
-            'status'          => 'active',
-            'language'        => 'en',
+            'name' => 'Acme Support Bot',
+            'public_id' => Str::random(12),
+            'status' => 'active',
+            'language' => 'en',
         ]);
 
         // Ensure settings exist (ChatbotSettingsObserver creates them if not)
@@ -35,7 +36,7 @@ class OnboardingService
             $chatbot->settings->update([
                 'welcome_message' => "Hi there! I'm Acme's AI assistant. How can I help you today?",
                 'fallback_message' => "I don't have enough information to answer that. Would you like to speak with a human?",
-                'primary_color'  => '#4F46E5',
+                'primary_color' => '#4F46E5',
             ]);
         }
 

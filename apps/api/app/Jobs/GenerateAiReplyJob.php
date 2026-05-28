@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Enums\ConversationStatus;
 use App\Enums\MessageRole;
 use App\Enums\MessageStatus;
 use App\Events\MessageCompleted;
@@ -18,7 +19,6 @@ class GenerateAiReplyJob implements ShouldQueue
 {
     use Queueable;
 
-
     /** Reply must arrive within 60 s or it's meaningless to the visitor. */
     public int $timeout = 60;
 
@@ -30,7 +30,7 @@ class GenerateAiReplyJob implements ShouldQueue
 
     public function __construct(
         public readonly Conversation $conversation,
-        public readonly Message      $assistantMessage,
+        public readonly Message $assistantMessage,
     ) {
         $this->onQueue('replies');
     }
@@ -41,12 +41,13 @@ class GenerateAiReplyJob implements ShouldQueue
         // BelongsToTenant uses 'currentOrganization' container binding.
         // Jobs don't go through middleware, so we bind it manually from the model.
         $conversation = $this->conversation->loadMissing(['chatbot.settings', 'chatbot.organization']);
-        $chatbot      = $conversation->chatbot;
+        $chatbot = $conversation->chatbot;
         app()->instance('currentOrganization', $chatbot->organization);
 
         // ── 1b. Guard: skip if an agent has taken over since this job was queued.
-        if ($conversation->status === \App\Enums\ConversationStatus::Escalated) {
+        if ($conversation->status === ConversationStatus::Escalated) {
             $this->assistantMessage->delete();
+
             return;
         }
 
@@ -68,12 +69,13 @@ class GenerateAiReplyJob implements ShouldQueue
             ]);
             $this->markFailed("I'm sorry, something went wrong. Please try again.");
             $analytics->record(
-                eventType:      'unanswered',
+                eventType: 'unanswered',
                 organizationId: (string) $conversation->organization_id,
-                chatbotId:      (string) $chatbot->id,
+                chatbotId: (string) $chatbot->id,
                 conversationId: (string) $conversation->id,
-                context:        ['reason' => 'no_user_message'],
+                context: ['reason' => 'no_user_message'],
             );
+
             return;
         }
 
@@ -83,33 +85,33 @@ class GenerateAiReplyJob implements ShouldQueue
         foreach ($allMessages as $historyMessage) {
             if ($historyMessage->id !== $userMessage->id) {
                 $history[] = [
-                    'role'    => $historyMessage->role->value,
+                    'role' => $historyMessage->role->value,
                     'content' => $historyMessage->content,
                 ];
             }
         }
 
         // ── 3. Run RAG pipeline with token streaming ───────────────────────────
-        $messageId      = (string) $this->assistantMessage->id;
+        $messageId = (string) $this->assistantMessage->id;
         $conversationId = (string) $conversation->id;
 
         try {
             $reply = $pipeline->execute(
                 chatbot: $chatbot,
-                query:   $userMessage->content,
+                query: $userMessage->content,
                 history: $history,
                 onToken: function (string $token) use ($conversationId, $messageId): void {
                     broadcast(new MessageTokenStreamed(
                         conversationId: $conversationId,
-                        messageId:      $messageId,
-                        token:          $token,
+                        messageId: $messageId,
+                        token: $token,
                     ));
                 },
             );
         } catch (\Throwable $e) {
             Log::error('GenerateAiReplyJob: pipeline exception', [
                 'conversation_id' => $conversation->id,
-                'error'           => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             $this->markFailed(
                 $chatbot->settings?->fallback_message
@@ -120,23 +122,23 @@ class GenerateAiReplyJob implements ShouldQueue
 
         // ── 4. Persist the completed assistant message ─────────────────────────
         $this->assistantMessage->update([
-            'content'     => $reply->content,
-            'status'      => MessageStatus::Complete,
-            'sources'     => $reply->sources,
-            'confidence'  => $reply->confidence,
+            'content' => $reply->content,
+            'status' => MessageStatus::Complete,
+            'sources' => $reply->sources,
+            'confidence' => $reply->confidence,
             'tokens_used' => $reply->tokens_used,
-            'latency_ms'  => $reply->latency_ms,
+            'latency_ms' => $reply->latency_ms,
         ]);
 
         $analytics->record(
-            eventType:      'message_replied',
+            eventType: 'message_replied',
             organizationId: (string) $conversation->organization_id,
-            chatbotId:      (string) $chatbot->id,
+            chatbotId: (string) $chatbot->id,
             conversationId: (string) $conversation->id,
             context: [
-                'confidence'  => $reply->confidence,
+                'confidence' => $reply->confidence,
                 'tokens_used' => $reply->tokens_used,
-                'latency_ms'  => $reply->latency_ms,
+                'latency_ms' => $reply->latency_ms,
             ],
         );
 
@@ -152,7 +154,7 @@ class GenerateAiReplyJob implements ShouldQueue
     {
         $this->assistantMessage->update([
             'content' => $content,
-            'status'  => MessageStatus::Failed,
+            'status' => MessageStatus::Failed,
         ]);
     }
 
@@ -162,9 +164,9 @@ class GenerateAiReplyJob implements ShouldQueue
     public function failed(\Throwable $e): void
     {
         Log::error('GenerateAiReplyJob exhausted retries', [
-            'conversation_id'    => $this->conversation->id,
-            'assistant_msg_id'   => $this->assistantMessage->id,
-            'error'              => $e->getMessage(),
+            'conversation_id' => $this->conversation->id,
+            'assistant_msg_id' => $this->assistantMessage->id,
+            'error' => $e->getMessage(),
         ]);
 
         // Ensure the placeholder doesn't stay 'pending' indefinitely.
@@ -176,11 +178,11 @@ class GenerateAiReplyJob implements ShouldQueue
         }
 
         app(AnalyticsRecorder::class)->record(
-            eventType:      'unanswered',
+            eventType: 'unanswered',
             organizationId: (string) $this->conversation->organization_id,
-            chatbotId:      (string) $this->conversation->chatbot_id,
+            chatbotId: (string) $this->conversation->chatbot_id,
             conversationId: (string) $this->conversation->id,
-            context:        ['reason' => 'retries_exhausted', 'error' => $e->getMessage()],
+            context: ['reason' => 'retries_exhausted', 'error' => $e->getMessage()],
         );
     }
 }

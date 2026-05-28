@@ -13,10 +13,10 @@ class PlanLimitWarningNotification extends Notification
      */
     public function __construct(
         private readonly Organization $organization,
-        private readonly string       $metric,
-        private readonly int          $current,
-        private readonly int          $limit,
-        private readonly int          $percent,
+        private readonly string $metric,
+        private readonly int $current,
+        private readonly int $limit,
+        private readonly int $percent,
     ) {}
 
     /** @return string[] */
@@ -27,9 +27,9 @@ class PlanLimitWarningNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $billingUrl  = rtrim((string) config('app.frontend_url', ''), '/') . '/billing';
+        $billingUrl = rtrim((string) config('app.frontend_url', ''), '/').'/billing';
         $metricLabel = str_replace('_', ' ', $this->metric);
-        $reached     = $this->percent >= 100;
+        $reached = $this->percent >= 100;
 
         $subject = $reached
             ? "[ReplyIQ] You've reached your {$metricLabel} limit"
@@ -51,6 +51,6 @@ class PlanLimitWarningNotification extends Notification
                 ->action('View billing', $billingUrl);
         }
 
-        return $message->line("You can view and manage your usage at any time in the billing dashboard.");
+        return $message->line('You can view and manage your usage at any time in the billing dashboard.');
     }
 }

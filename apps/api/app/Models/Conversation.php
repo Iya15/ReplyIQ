@@ -9,10 +9,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * @property ConversationStatus $status
- * @property \Illuminate\Support\Carbon|null $resolved_at
+ * @property Carbon|null $resolved_at
  */
 class Conversation extends Model
 {
@@ -38,8 +40,8 @@ class Conversation extends Model
     protected function casts(): array
     {
         return [
-            'status'       => ConversationStatus::class,
-            'resolved_at'  => 'datetime',
+            'status' => ConversationStatus::class,
+            'resolved_at' => 'datetime',
             'escalated_at' => 'datetime',
         ];
     }
@@ -58,7 +60,7 @@ class Conversation extends Model
         return $this->hasMany(Message::class)->orderBy('created_at');
     }
 
-    public function latestMessage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function latestMessage(): HasOne
     {
         return $this->hasOne(Message::class)->latestOfMany('created_at');
     }

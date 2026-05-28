@@ -15,7 +15,7 @@ class UpdateVisitorRequest extends FormRequest
     {
         return [
             'visitor_email' => ['nullable', 'email', 'max:255'],
-            'visitor_name'  => ['nullable', 'string', 'max:100'],
+            'visitor_name' => ['nullable', 'string', 'max:100'],
         ];
     }
 }

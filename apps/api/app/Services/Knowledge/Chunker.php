@@ -51,7 +51,7 @@ class Chunker
 
         $parts = array_values(array_filter(
             array_map('trim', explode($sep, $text)),
-            fn(string $p): bool => $p !== '',
+            fn (string $p): bool => $p !== '',
         ));
 
         $result = [];
@@ -85,6 +85,7 @@ class Chunker
             if ($current === '') {
                 $current = $piece;
                 $currentTokens = $pieceTokens;
+
                 continue;
             }
 
@@ -105,7 +106,7 @@ class Chunker
 
         return array_values(array_filter(
             $chunks,
-            fn(string $c): bool => trim($c) !== '',
+            fn (string $c): bool => trim($c) !== '',
         ));
     }
 

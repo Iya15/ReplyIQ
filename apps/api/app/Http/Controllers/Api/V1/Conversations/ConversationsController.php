@@ -23,7 +23,7 @@ class ConversationsController extends Controller
             $q->where('status', $r->input('status'));
         }
         if ($r->filled('search')) {
-            $q->where('visitor_id', 'like', '%' . $r->input('search') . '%');
+            $q->where('visitor_id', 'like', '%'.$r->input('search').'%');
         }
 
         return $this->paginated($q->paginate(20), ConversationResource::class, $r);

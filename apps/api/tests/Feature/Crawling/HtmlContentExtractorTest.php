@@ -4,7 +4,7 @@ use App\Services\Crawling\HtmlContentExtractor;
 
 function extractor(): HtmlContentExtractor
 {
-    return new HtmlContentExtractor();
+    return new HtmlContentExtractor;
 }
 
 // ── extract ───────────────────────────────────────────────────────────────────
@@ -16,10 +16,10 @@ it('returns text from a simple HTML page', function () {
 
 it('strips script and style tags', function () {
     $html = '<html><body>'
-        . '<script>alert("xss")</script>'
-        . '<style>.hidden { display: none; }</style>'
-        . '<p>Real content here.</p>'
-        . '</body></html>';
+        .'<script>alert("xss")</script>'
+        .'<style>.hidden { display: none; }</style>'
+        .'<p>Real content here.</p>'
+        .'</body></html>';
 
     $text = extractor()->extract($html);
 
@@ -31,12 +31,12 @@ it('strips script and style tags', function () {
 
 it('strips nav, header, footer, and aside elements', function () {
     $html = '<html><body>'
-        . '<header>Site Header</header>'
-        . '<nav>Menu links</nav>'
-        . '<main>Main article content.</main>'
-        . '<aside>Sidebar ad</aside>'
-        . '<footer>Copyright 2025</footer>'
-        . '</body></html>';
+        .'<header>Site Header</header>'
+        .'<nav>Menu links</nav>'
+        .'<main>Main article content.</main>'
+        .'<aside>Sidebar ad</aside>'
+        .'<footer>Copyright 2025</footer>'
+        .'</body></html>';
 
     $text = extractor()->extract($html);
 
@@ -50,9 +50,9 @@ it('strips nav, header, footer, and aside elements', function () {
 
 it('prefers <main> content over the full body', function () {
     $html = '<html><body>'
-        . '<div>Body noise</div>'
-        . '<main>Primary content lives here.</main>'
-        . '</body></html>';
+        .'<div>Body noise</div>'
+        .'<main>Primary content lives here.</main>'
+        .'</body></html>';
 
     $text = extractor()->extract($html);
 
@@ -63,9 +63,9 @@ it('prefers <main> content over the full body', function () {
 
 it('falls back to <article> when there is no <main>', function () {
     $html = '<html><body>'
-        . '<div>Body noise</div>'
-        . '<article>Article text here.</article>'
-        . '</body></html>';
+        .'<div>Body noise</div>'
+        .'<article>Article text here.</article>'
+        .'</body></html>';
 
     $text = extractor()->extract($html);
 
@@ -79,9 +79,9 @@ it('falls back to <body> when neither <main> nor <article> exists', function () 
 
 it('strips elements with role=navigation', function () {
     $html = '<html><body>'
-        . '<div role="navigation">Nav menu</div>'
-        . '<main>Actual content.</main>'
-        . '</body></html>';
+        .'<div role="navigation">Nav menu</div>'
+        .'<main>Actual content.</main>'
+        .'</body></html>';
 
     $text = extractor()->extract($html);
 
@@ -92,7 +92,7 @@ it('strips elements with role=navigation', function () {
 
 it('handles malformed HTML without throwing', function () {
     $html = '<html><body><p>Unclosed paragraph<div>Some <b>bold text</body>';
-    expect(fn () => extractor()->extract($html))->not->toThrow(\Throwable::class);
+    expect(fn () => extractor()->extract($html))->not->toThrow(Throwable::class);
 });
 
 // ── extractTitle ──────────────────────────────────────────────────────────────

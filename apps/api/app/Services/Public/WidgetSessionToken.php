@@ -30,7 +30,8 @@ use Psr\Clock\ClockInterface;
  */
 class WidgetSessionToken
 {
-    private const ISSUER    = 'replyiq.widget';
+    private const ISSUER = 'replyiq.widget';
+
     private const TTL_HOURS = 24;
 
     private Configuration $jwt;
@@ -42,13 +43,13 @@ class WidgetSessionToken
 
     public function issue(string $chatbotPublicId, string $conversationId, string $visitorId): string
     {
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         return $this->jwt
             ->builder()
             ->issuedBy(self::ISSUER)
             ->issuedAt($now)
-            ->expiresAt($now->modify('+' . self::TTL_HOURS . ' hours'))
+            ->expiresAt($now->modify('+'.self::TTL_HOURS.' hours'))
             ->withClaim('cid', $chatbotPublicId)
             ->withClaim('cnv', $conversationId)
             ->withClaim('vid', $visitorId)
@@ -70,15 +71,19 @@ class WidgetSessionToken
             $this->jwt->validator()->assert(
                 $token,
                 new IssuedBy(self::ISSUER),
-                new LooseValidAt(new class implements ClockInterface {
-                    public function now(): \DateTimeImmutable { return new \DateTimeImmutable(); }
+                new LooseValidAt(new class implements ClockInterface
+                {
+                    public function now(): DateTimeImmutable
+                    {
+                        return new DateTimeImmutable;
+                    }
                 }),
             );
 
             return [
-                'chatbot_id'      => (string) $token->claims()->get('cid'),
+                'chatbot_id' => (string) $token->claims()->get('cid'),
                 'conversation_id' => (string) $token->claims()->get('cnv'),
-                'visitor_id'      => (string) $token->claims()->get('vid'),
+                'visitor_id' => (string) $token->claims()->get('vid'),
             ];
         } catch (\Throwable) {
             return null;
@@ -94,6 +99,6 @@ class WidgetSessionToken
             ? InMemory::base64Encoded(substr($appKey, 7))
             : InMemory::plainText($appKey);
 
-        return Configuration::forSymmetricSigner(new Sha256(), $key);
+        return Configuration::forSymmetricSigner(new Sha256, $key);
     }
 }
