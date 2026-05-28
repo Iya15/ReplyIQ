@@ -15,5 +15,6 @@ export default defineConfig({
     __REVERB_HOST__:    '"localhost"',
     __REVERB_PORT__:    6001,
     __REVERB_SCHEME__:  '"ws"',
+    __BUILD_HASH__:     '"test"',
   },
 });

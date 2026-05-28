@@ -14,7 +14,7 @@ function close() {
 }
 
 export default function ChatWindow({ config, session }: Props) {
-  const { messages, sendMessage, sendFeedback, isPending, isLoading } =
+  const { messages, sendMessage, sendFeedback, isPending, isLoading, errorMessage } =
     useConversation(session);
 
   return (
@@ -30,6 +30,22 @@ export default function ChatWindow({ config, session }: Props) {
         isLoading={isLoading}
         onFeedback={sendFeedback}
       />
+
+      {errorMessage && (
+        <div
+          style={{
+            borderTop: '1px solid rgba(217,119,6,0.25)',
+            background: 'rgba(217,119,6,0.07)',
+            padding: '6px 16px',
+            textAlign: 'center',
+            fontSize: '12px',
+            color: '#b45309',
+          }}
+          role="alert"
+        >
+          {errorMessage}
+        </div>
+      )}
 
       <MessageInput
         config={config}

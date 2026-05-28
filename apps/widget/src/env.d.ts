@@ -12,3 +12,4 @@ declare const __REVERB_APP_KEY__: string;
 declare const __REVERB_HOST__:    string;
 declare const __REVERB_PORT__:    number;
 declare const __REVERB_SCHEME__:  string;
+declare const __BUILD_HASH__:     string;

@@ -91,7 +91,60 @@ Assuming your domain is managed by Cloudflare:
 
 ---
 
-## 5. Smoke Test Checklist
+## 5. Widget CDN (Cloudflare R2)
+
+### One-time setup
+
+1. **Cloudflare R2** → Create bucket `replyiq-widget-staging`
+2. **Custom domain** → R2 bucket settings → Add domain: `cdn-staging.replyiq.com`
+   - Cloudflare automatically handles TLS + CDN caching rules
+3. **Wrangler** → Install: `npm install -g wrangler` → `wrangler login`
+4. **CORS rule** on the R2 bucket:
+   ```json
+   [{"AllowedOrigins":["*"],"AllowedMethods":["GET","HEAD"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"]}]
+   ```
+
+### Deploy
+
+```bash
+# From repo root
+WIDGET_BASE=https://cdn-staging.replyiq.com/widget \
+  pnpm --filter widget build
+
+bash scripts/deploy-widget.sh \
+  --bucket replyiq-widget-staging \
+  --base-url https://cdn-staging.replyiq.com
+```
+
+The script uploads:
+- `public/widget.js` → `Cache-Control: public, max-age=3600`
+- `dist/app/assets/*` → `Cache-Control: public, max-age=31536000, immutable`
+- `dist/app/index.html` → `Cache-Control: public, max-age=60`
+
+### Purge after deploy
+
+After uploading a new `widget.js`, purge the Cloudflare cache:
+
+```bash
+curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+  -H "Authorization: Bearer $CF_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data '{"files":["https://cdn-staging.replyiq.com/widget.js"]}'
+```
+
+### Widget smoke test
+
+After deploy:
+- [ ] `curl -I https://cdn-staging.replyiq.com/widget.js` returns 200 with `cache-control: max-age=3600`
+- [ ] Open a test page that embeds `widget.js` from `cdn-staging.replyiq.com`
+- [ ] Launcher appears within 1 second
+- [ ] Open chat → welcome message shown
+- [ ] Send a message → reply appears (streaming or polling)
+- [ ] Check DevTools → Network → `widget.js` response has `access-control-allow-origin: *`
+
+---
+
+## 6. Smoke Test Checklist
 
 After deploy, run through this flow manually:
 

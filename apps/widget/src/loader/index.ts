@@ -250,7 +250,10 @@ export function createLoader(): Loader {
     const iframe = document.createElement('iframe');
     iframe.id    = 'riq-widget';
     iframe.setAttribute('data-riq', 'iframe');
-    iframe.src   = `${__WIDGET_BASE__}/${chatbotId}`;
+    iframe.src   = `${__WIDGET_BASE__}/${chatbotId}?v=${__BUILD_HASH__}`;
+    // allow-same-origin is required so the app inside the iframe can use
+    // sessionStorage and authenticate WebSocket presence channels.
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
     iframe.setAttribute('allow', 'microphone');
     iframe.setAttribute('title', config?.name ?? 'Chat widget');
 

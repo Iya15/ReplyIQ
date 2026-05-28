@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createEcho } from '../lib/echo';
-import { getMessages, sendMessage as apiSendMessage, sendFeedback as apiSendFeedback } from '../lib/api';
+import { getMessages, sendMessage as apiSendMessage, sendFeedback as apiSendFeedback, RateLimitError } from '../lib/api';
 import type { Message, Session, Source } from '../lib/types';
 
 const POLL_INTERVAL_MS   = 1500;
@@ -21,9 +21,11 @@ interface CompletedEvent {
 }
 
 export function useConversation(session: Session | null) {
-  const [messages,  setMessages]  = useState<Message[]>([]);
-  const [isPending, setIsPending] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [messages,      setMessages]      = useState<Message[]>([]);
+  const [isPending,     setIsPending]     = useState(false);
+  const [isLoading,     setIsLoading]     = useState(false);
+  const [errorMessage,  setErrorMessage]  = useState<string | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout>  | null>(null);
@@ -167,9 +169,16 @@ export function useConversation(session: Session | null) {
         if (useFallbackRef.current) {
           startPollingRef.current?.(realAssistId);
         }
-      } catch {
+      } catch (err) {
         setMessages(prev => prev.filter(m => m.id !== tempUserId && m.id !== tempAssistId));
         setIsPending(false);
+
+        const msg = err instanceof RateLimitError
+          ? 'Slow down a moment...'
+          : 'Failed to send. Please try again.';
+        setErrorMessage(msg);
+        if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = setTimeout(() => setErrorMessage(null), 5000);
       }
     },
     [session, isPending],
@@ -183,5 +192,5 @@ export function useConversation(session: Session | null) {
     [session],
   );
 
-  return { messages, sendMessage, sendFeedback, isPending, isLoading };
+  return { messages, sendMessage, sendFeedback, isPending, isLoading, errorMessage };
 }

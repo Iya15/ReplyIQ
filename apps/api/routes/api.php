@@ -104,7 +104,7 @@ Route::prefix('v1')->group(function () {
             Route::post(
                 'conversations/{id}/messages',
                 [PublicConversationsController::class, 'sendMessage'],
-            )->name('public.conversations.messages.store');
+            )->middleware('throttle:widget-send')->name('public.conversations.messages.store');
 
             Route::get(
                 'conversations/{id}/messages',

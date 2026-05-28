@@ -1,4 +1,14 @@
+import { execSync } from 'child_process';
 import { defineConfig } from 'vite';
+
+function buildHash(): string {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['pipe', 'pipe', 'ignore'] })
+      .toString().trim();
+  } catch {
+    return Date.now().toString(36);
+  }
+}
 
 /**
  * Loader bundle: public/widget.js
@@ -20,6 +30,9 @@ export default defineConfig(({ mode }) => ({
     ),
     __API_BASE__: JSON.stringify(
       process.env['WIDGET_API_BASE'] ?? 'https://api.replyiq.com',
+    ),
+    __BUILD_HASH__: JSON.stringify(
+      process.env['BUILD_HASH'] ?? buildHash(),
     ),
   },
   build: {

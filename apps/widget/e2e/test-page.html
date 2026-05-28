@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReplyIQ Widget — E2E Test Page</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 40px; background: #f8fafc; }
+    h1   { font-size: 24px; color: #1e293b; }
+    p    { color: #64748b; }
+  </style>
+</head>
+<body>
+  <h1>E2E Test Page</h1>
+  <p>This page simulates a customer site with the ReplyIQ widget embedded.</p>
+
+  <!--
+    The loader is served by the Vite preview server at /widget.js.
+    WIDGET_BASE and API_BASE are overridden at test time via page.addInitScript()
+    so the loader points to the locally-served iframe app and the mocked API.
+  -->
+  <script>
+    (function(d,s,o,f,js,fjs){
+      d[o] = d[o] || function(){ (d[o].q = d[o].q || []).push(arguments); };
+      js  = d.createElement(s); fjs = d.getElementsByTagName(s)[0];
+      js.id = o; js.src = f; js.async = 1;
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'riq', '/widget.js'));
+    riq('init', { chatbotId: 'test-bot-001' });
+  </script>
+</body>
+</html>
