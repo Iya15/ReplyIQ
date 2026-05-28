@@ -54,4 +54,9 @@ class Conversation extends Model
     {
         return $this->hasMany(Message::class)->orderBy('created_at');
     }
+
+    public function latestMessage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Message::class)->latestOfMany('created_at');
+    }
 }

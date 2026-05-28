@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotsController;
 use App\Http\Controllers\Api\V1\Chatbots\ChatbotSettingsController;
+use App\Http\Controllers\Api\V1\Conversations\ConversationsController;
 use App\Http\Controllers\Api\V1\Documents\DocumentsController;
 use App\Http\Controllers\Api\V1\Public\BroadcastingAuthController as PublicBroadcastingAuthController;
 use App\Http\Controllers\Api\V1\Public\ChatbotsController as PublicChatbotsController;
@@ -57,6 +58,12 @@ Route::prefix('v1')->group(function () {
         Route::get('chatbots/{chatbot}/embed-code', [ChatbotsController::class, 'embedCode']);
         Route::get('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'show']);
         Route::patch('chatbots/{chatbot}/settings', [ChatbotSettingsController::class, 'update']);
+
+        // ── Conversations ──────────────────────────────────────────────────────
+        Route::get('chatbots/{chatbot}/conversations', [ConversationsController::class, 'index']);
+        Route::get('conversations/{conversation}', [ConversationsController::class, 'show']);
+        Route::get('conversations/{conversation}/messages', [ConversationsController::class, 'messages']);
+        Route::post('conversations/{conversation}/resolve', [ConversationsController::class, 'resolve']);
 
         // ── Documents ─────────────────────────────────────────────────────────
         Route::get('chatbots/{chatbot}/documents', [DocumentsController::class, 'index']);

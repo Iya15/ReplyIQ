@@ -1,15 +1,67 @@
-import { MessageSquare } from 'lucide-react';
+'use client';
 
-export default function ConversationsPage() {
+import { use, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ConversationList } from '@/components/conversations/conversation-list';
+import { ConversationDetail, ConversationDetailEmpty } from '@/components/conversations/conversation-detail';
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function ConversationsPage({ params }: PageProps) {
+  const { id } = use(params);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+
+  function handleSelect(conversationId: string) {
+    setSelectedId(conversationId);
+    setMobileView('detail');
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-6">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mb-4">
-        <MessageSquare className="h-7 w-7 text-primary" />
+    <div className="flex h-full overflow-hidden">
+      {/* Left panel — list */}
+      <div
+        className={`flex flex-col w-full md:w-1/3 md:border-r shrink-0 ${
+          mobileView === 'detail' ? 'hidden md:flex' : 'flex'
+        }`}
+      >
+        <ConversationList
+          chatbotId={id}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+        />
       </div>
-      <h2 className="text-lg font-semibold">Conversations</h2>
-      <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-        View and search all conversations with your chatbot. Coming in Phase 2.
-      </p>
+
+      {/* Right panel — detail */}
+      <div
+        className={`flex flex-col flex-1 min-w-0 ${
+          mobileView === 'list' ? 'hidden md:flex' : 'flex'
+        }`}
+      >
+        {/* Mobile back button */}
+        {mobileView === 'detail' && (
+          <div className="md:hidden border-b px-3 py-2 shrink-0">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setMobileView('list')}
+              className="-ml-1"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+          </div>
+        )}
+
+        {selectedId ? (
+          <ConversationDetail conversationId={selectedId} chatbotId={id} />
+        ) : (
+          <ConversationDetailEmpty />
+        )}
+      </div>
     </div>
   );
 }

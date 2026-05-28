@@ -23,7 +23,8 @@ if (typeof window !== 'undefined') {
   (window as typeof window & { Pusher: typeof Pusher }).Pusher = Pusher;
 }
 
-let echoInstance: Echo | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let echoInstance: Echo<any> | null = null;
 
 /**
  * Returns the shared Echo instance, creating it if needed.
@@ -31,7 +32,8 @@ let echoInstance: Echo | null = null;
  * @param token  Sanctum Bearer token for the authenticated dashboard user.
  *               Pass `null` only if you need the instance before auth (rare).
  */
-export function getEcho(token: string | null): Echo {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getEcho(token: string | null): Echo<any> {
   if (echoInstance) return echoInstance;
 
   const scheme = process.env.NEXT_PUBLIC_REVERB_SCHEME ?? 'http';
@@ -40,7 +42,8 @@ export function getEcho(token: string | null): Echo {
   // Auth endpoint lives at the API root, not under /api/v1.
   const authEndpoint = apiUrl.replace(/\/api\/v1\/?$/, '') + '/broadcasting/auth';
 
-  echoInstance = new Echo({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  echoInstance = new Echo<any>({
     broadcaster:       'reverb',
     key:               process.env.NEXT_PUBLIC_REVERB_APP_KEY ?? '',
     wsHost:            process.env.NEXT_PUBLIC_REVERB_HOST ?? 'localhost',

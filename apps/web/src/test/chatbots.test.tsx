@@ -22,6 +22,21 @@ vi.mock('@/hooks/use-chatbots', () => ({
   useUpdateChatbotSettings: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+vi.mock('@/hooks/use-conversations', () => ({
+  useConversations: () => ({ data: undefined, isLoading: false }),
+  useConversation:  () => ({ data: undefined, isLoading: false }),
+  useResolveConversation: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+vi.mock('@/hooks/use-messages', () => ({
+  useMessages: () => ({ data: undefined, isLoading: false }),
+}));
+
+vi.mock('@/lib/echo', () => ({
+  getEcho: () => ({ join: vi.fn(() => ({ listen: vi.fn() })), leave: vi.fn() }),
+  destroyEcho: vi.fn(),
+}));
+
 vi.mock('@/hooks/use-documents', () => ({
   useDocuments: () => ({ data: undefined, isLoading: false }),
   useUploadDocument: () => ({ mutateAsync: vi.fn(), isPending: false, progress: 0, reset: vi.fn() }),
@@ -84,9 +99,15 @@ describe('KnowledgePage', () => {
 });
 
 describe('ConversationsPage', () => {
-  it('renders the conversations heading', () => {
-    renderWithProviders(<ConversationsPage />);
-    expect(screen.getByRole('heading', { name: /conversations/i })).toBeInTheDocument();
+  it('renders the empty conversation list', async () => {
+    await act(async () => {
+      renderWithProviders(
+        <Suspense fallback={null}>
+          <ConversationsPage params={Promise.resolve({ id: 'test-chatbot-id' })} />
+        </Suspense>,
+      );
+    });
+    expect(screen.getByPlaceholderText(/search visitor id/i)).toBeInTheDocument();
   });
 });
 

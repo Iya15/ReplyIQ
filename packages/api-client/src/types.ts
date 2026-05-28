@@ -173,6 +173,53 @@ export interface ListParams {
   per_page?: number;
 }
 
+// ── Conversations ─────────────────────────────────────────────────────────────
+
+export type ConversationStatus = 'active' | 'resolved' | 'escalated';
+
+export interface ConversationLastMessage {
+  id:         string;
+  role:       'user' | 'assistant';
+  content:    string; // truncated to 120 chars server-side
+  created_at: string;
+}
+
+export interface Conversation {
+  id:            string;
+  chatbot_id:    string;
+  visitor_id:    string;
+  source_url:    string | null;
+  country:       string | null;
+  status:        ConversationStatus;
+  resolved_at:   string | null;
+  created_at:    string;
+  message_count?: number;
+  last_message?:  ConversationLastMessage | null;
+}
+
+export interface MessageSource {
+  id:    string;
+  title: string;
+  url?:  string | null;
+}
+
+export interface Message {
+  id:         string;
+  role:       'user' | 'assistant';
+  content:    string;
+  status:     'pending' | 'complete';
+  sources:    MessageSource[];
+  confidence: number | null;
+  created_at: string;
+}
+
+export interface ConversationFilters {
+  status?:   ConversationStatus;
+  search?:   string;
+  page?:     number;
+  per_page?: number;
+}
+
 // ── Documents ─────────────────────────────────────────────────────────────────
 
 export type DocumentStatus = 'pending' | 'processing' | 'ready' | 'failed';

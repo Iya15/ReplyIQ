@@ -2,6 +2,7 @@ import {
   createApiClient,
   createAuthEndpoints,
   createChatbotEndpoints,
+  createConversationEndpoints,
   createDocumentEndpoints,
 } from '@replyiq/api-client';
 import { useAuthStore } from './auth/auth-store';
@@ -23,8 +24,9 @@ const client = createApiClient({
   onUnauthorized,
 });
 
-export const authApi = createAuthEndpoints(client);
-export const chatbotsApi = createChatbotEndpoints(client);
-export const documentsApi = createDocumentEndpoints(client);
+export const authApi          = createAuthEndpoints(client);
+export const chatbotsApi      = createChatbotEndpoints(client);
+export const documentsApi     = createDocumentEndpoints(client);
+export const conversationsApi = createConversationEndpoints(client);
 
 export { ApiError } from '@replyiq/api-client';

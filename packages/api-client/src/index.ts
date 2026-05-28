@@ -25,6 +25,12 @@ export type {
   DocumentFilters,
   StoreDocumentTextPayload,
   StoreDocumentUrlPayload,
+  ConversationStatus,
+  ConversationLastMessage,
+  Conversation,
+  MessageSource,
+  Message,
+  ConversationFilters,
 } from './types';
 
 // ApiError is a class — runtime value, importable without `type`
@@ -38,3 +44,4 @@ export type { ApiClient, ApiClientConfig } from './client';
 export { createAuthEndpoints } from './endpoints/auth';
 export { createChatbotEndpoints } from './endpoints/chatbots';
 export { createDocumentEndpoints } from './endpoints/documents';
+export { createConversationEndpoints } from './endpoints/conversations';
