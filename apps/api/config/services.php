@@ -45,6 +45,7 @@ return [
 
     'slack' => [
         'escalation_webhook_url' => env('SLACK_ESCALATION_WEBHOOK_URL'),
+        'cost_webhook_url'       => env('SLACK_COST_WEBHOOK_URL'),
     ],
 
 ];

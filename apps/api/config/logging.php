@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -52,10 +53,42 @@ return [
 
     'channels' => [
 
+        // ── Production stack: JSON-formatted stderr + Logtail (if configured) ──
         'stack' => [
-            'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
+            'driver'            => 'stack',
+            'channels'          => explode(',', env('LOG_STACK', 'stderr-json')),
             'ignore_exceptions' => false,
+        ],
+
+        // ── Structured JSON to stderr (consumed by container log driver) ───────
+        // Used as the default in production. Better Stack (Logtail) ingests the
+        // container stdout/stderr and parses the JSON automatically.
+        'stderr-json' => [
+            'driver'    => 'monolog',
+            'level'     => env('LOG_LEVEL', 'debug'),
+            'handler'   => StreamHandler::class,
+            'with'      => ['stream' => 'php://stderr'],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        // ── Logtail (Better Stack) via HTTP ingestion endpoint ─────────────────
+        // Use when LOG_STACK=stderr-json,logtail or LOG_STACK=logtail.
+        // Requires BETTERSTACK_SOURCE_TOKEN to be set.
+        'logtail' => [
+            'driver'  => 'monolog',
+            'level'   => env('LOG_LEVEL', 'info'),
+            'handler' => \Logtail\Monolog\LogtailHandler::class,
+            'with'    => [
+                'source_token' => env('BETTERSTACK_SOURCE_TOKEN', ''),
+            ],
+        ],
+
+        // ── Sentry (errors + warnings only; exceptions captured automatically) ─
+        'sentry' => [
+            'driver' => 'sentry',
+            'level'  => env('LOG_SENTRY_LEVEL', 'warning'),
+            'bubble' => true,
         ],
 
         'single' => [
