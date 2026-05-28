@@ -10,6 +10,7 @@
     "build":        "pnpm build:loader && pnpm build:app",
     "preview":      "vite preview --config vite.config.app.ts",
     "type-check":   "tsc --noEmit",
+    "test":         "vitest run",
     "size-limit":   "size-limit"
   },
   "dependencies": {
@@ -26,13 +27,16 @@
     "@types/react":                 "^19",
     "@types/react-dom":             "^19",
     "@vitejs/plugin-react":         "^4.3",
+    "@vitest/coverage-v8":          "^3",
     "autoprefixer":                 "^10",
+    "jsdom":                        "^26",
     "postcss":                      "^8",
     "size-limit":                   "^11",
     "tailwindcss":                  "^3.4",
     "terser":                       "^5",
     "tsx":                          "^4",
     "typescript":                   "^5",
-    "vite":                         "^5"
+    "vite":                         "^5",
+    "vitest":                       "^3"
   }
 }

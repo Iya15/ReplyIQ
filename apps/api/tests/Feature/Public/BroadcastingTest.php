@@ -10,7 +10,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Organization;
 use App\Models\User;
-use Database\Factories\MessageFactory;
+use App\Services\Public\WidgetSessionToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -27,12 +27,9 @@ function broadcastChatbot(): array
     return [$org, $chatbot];
 }
 
-function broadcastHeaders(Chatbot $chatbot, string $visitorId, ?int $ts = null): array
+function broadcastToken(Chatbot $chatbot, string $conversationId, string $visitorId): string
 {
-    $ts    ??= now()->timestamp;
-    $payload = "{$chatbot->public_id}:{$visitorId}:{$ts}";
-    $sig     = hash_hmac('sha256', $payload, $chatbot->settings->widget_secret);
-    return ['X-RIQ-Signature' => $sig, 'X-RIQ-Timestamp' => (string) $ts];
+    return app(WidgetSessionToken::class)->issue($chatbot->public_id, $conversationId, $visitorId);
 }
 
 // ── MessageTokenStreamed event ─────────────────────────────────────────────────
@@ -52,7 +49,6 @@ it('broadcasts MessageTokenStreamed events during streaming generation', functio
         ->assistant()
         ->create(['organization_id' => $org->id]);
 
-    // Inject a streaming LLM stub that emits 3 tokens via onToken.
     app()->bind(
         \App\Services\Ai\Contracts\LlmClient::class,
         fn () => new class implements \App\Services\Ai\Contracts\LlmClient {
@@ -75,7 +71,6 @@ it('broadcasts MessageTokenStreamed events during streaming generation', functio
     (new GenerateAiReplyJob($conversation, $assistantMessage))
         ->handle(app(\App\Services\Ai\RagPipeline::class));
 
-    // Three token events — one per yielded chunk.
     Event::assertDispatched(MessageTokenStreamed::class, 3);
 
     Event::assertDispatched(MessageTokenStreamed::class, function (MessageTokenStreamed $e) use ($conversation, $assistantMessage) {
@@ -161,103 +156,90 @@ it('MessageTokenStreamed broadcasts on the correct channel with the right event 
         ->and($event->token)->toBe('tok');
 });
 
-// ── Widget broadcasting auth endpoint ─────────────────────────────────────────
+// ── Widget broadcasting auth endpoint (widget:token) ──────────────────────────
 
-it('returns a signed presence auth response for a valid widget request', function () {
+it('returns a signed presence auth response for a valid session token', function () {
     [, $chatbot] = broadcastChatbot();
     $visitorId   = (string) Str::uuid();
 
-    // Create a conversation that the visitor owns.
     $conversation = Conversation::factory()->create([
         'chatbot_id'      => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
         'visitor_id'      => $visitorId,
     ]);
 
-    $socketId    = '123.456';
-    $channelName = 'presence-chat.' . $conversation->id;
-    $headers     = broadcastHeaders($chatbot, $visitorId);
+    $token    = broadcastToken($chatbot, (string) $conversation->id, $visitorId);
+    $socketId = '123.456';
+    $channel  = 'presence-chat.' . $conversation->id;
 
-    $response = $this->postJson('/api/v1/public/broadcasting/auth', [
-        'public_id'    => $chatbot->public_id,
-        'visitor_id'   => $visitorId,
-        'socket_id'    => $socketId,
-        'channel_name' => $channelName,
-    ], $headers);
+    $response = $this->withHeaders(['Authorization' => "Bearer {$token}"])
+        ->postJson('/api/v1/public/broadcasting/auth', [
+            'socket_id'    => $socketId,
+            'channel_name' => $channel,
+        ]);
 
     $response->assertOk()
         ->assertJsonStructure(['auth', 'channel_data']);
 
-    // Verify the auth string format: "app_key:hmac_signature".
     $auth = $response->json('auth');
     expect($auth)->toContain(':')
         ->and(explode(':', $auth, 2)[0])->toBe((string) config('broadcasting.connections.reverb.key'));
 
-    // Verify channel_data contains user_id = visitor_id.
     $channelData = json_decode($response->json('channel_data'), true);
     expect($channelData['user_id'])->toBe($visitorId)
         ->and($channelData['user_info']['type'])->toBe('widget');
 });
 
-it('returns 403 when the visitor does not own the conversation', function () {
-    [, $chatbot] = broadcastChatbot();
-    $visitorA    = (string) Str::uuid();
-    $visitorB    = (string) Str::uuid();
-
-    // Conversation belongs to Visitor A.
-    $conversation = Conversation::factory()->create([
-        'chatbot_id'      => $chatbot->id,
-        'organization_id' => $chatbot->organization_id,
-        'visitor_id'      => $visitorA,
-    ]);
-
-    // Visitor B tries to auth for Visitor A's conversation with their own HMAC.
-    $headers = broadcastHeaders($chatbot, $visitorB);
-
-    $this->postJson('/api/v1/public/broadcasting/auth', [
-        'public_id'    => $chatbot->public_id,
-        'visitor_id'   => $visitorB,
-        'socket_id'    => '123.456',
-        'channel_name' => 'presence-chat.' . $conversation->id,
-    ], $headers)->assertForbidden();
-});
-
-it('returns 401 when the HMAC signature is invalid for broadcasting auth', function () {
+it('returns 403 when the channel name does not match the conversation in the token', function () {
     [, $chatbot] = broadcastChatbot();
     $visitorId   = (string) Str::uuid();
 
-    $conversation = Conversation::factory()->create([
+    $convA = Conversation::factory()->create([
+        'chatbot_id'      => $chatbot->id,
+        'organization_id' => $chatbot->organization_id,
+        'visitor_id'      => $visitorId,
+    ]);
+    $convB = Conversation::factory()->create([
         'chatbot_id'      => $chatbot->id,
         'organization_id' => $chatbot->organization_id,
         'visitor_id'      => $visitorId,
     ]);
 
-    $ts      = (string) now()->timestamp;
-    $headers = [
-        'X-RIQ-Signature' => 'invalidsignature',
-        'X-RIQ-Timestamp' => $ts,
-    ];
+    // Token is scoped to convA but request asks for convB's channel.
+    $token = broadcastToken($chatbot, (string) $convA->id, $visitorId);
 
+    $this->withHeaders(['Authorization' => "Bearer {$token}"])
+        ->postJson('/api/v1/public/broadcasting/auth', [
+            'socket_id'    => '123.456',
+            'channel_name' => 'presence-chat.' . $convB->id,
+        ])->assertForbidden();
+});
+
+it('returns 401 when no Bearer token is provided for broadcasting auth', function () {
     $this->postJson('/api/v1/public/broadcasting/auth', [
-        'public_id'    => $chatbot->public_id,
-        'visitor_id'   => $visitorId,
         'socket_id'    => '123.456',
-        'channel_name' => 'presence-chat.' . $conversation->id,
-    ], $headers)->assertUnauthorized();
+        'channel_name' => 'presence-chat.' . Str::uuid(),
+    ])->assertUnauthorized()
+      ->assertJsonPath('error.code', 'missing_token');
 });
 
 it('rejects a non-presence channel name', function () {
     [, $chatbot] = broadcastChatbot();
     $visitorId   = (string) Str::uuid();
 
-    $headers = broadcastHeaders($chatbot, $visitorId);
+    $conversation = Conversation::factory()->create([
+        'chatbot_id'      => $chatbot->id,
+        'organization_id' => $chatbot->organization_id,
+        'visitor_id'      => $visitorId,
+    ]);
 
-    $this->postJson('/api/v1/public/broadcasting/auth', [
-        'public_id'    => $chatbot->public_id,
-        'visitor_id'   => $visitorId,
-        'socket_id'    => '123.456',
-        'channel_name' => 'private-chat.something',  // not presence-chat.*
-    ], $headers)->assertUnprocessable();
+    $token = broadcastToken($chatbot, (string) $conversation->id, $visitorId);
+
+    $this->withHeaders(['Authorization' => "Bearer {$token}"])
+        ->postJson('/api/v1/public/broadcasting/auth', [
+            'socket_id'    => '123.456',
+            'channel_name' => 'private-chat.something', // not presence-chat.*
+        ])->assertUnprocessable();
 });
 
 // ── Dashboard presence channel auth (channels.php) ────────────────────────────

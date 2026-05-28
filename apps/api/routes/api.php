@@ -68,28 +68,31 @@ Route::prefix('v1')->group(function () {
     });
 
     // ── Public (widget) API ───────────────────────────────────────────────────
-    // No user auth — protected by WidgetAuth (HMAC + Origin).
-    // 'throttle:widget' = 60 requests/minute per IP (defined in AppServiceProvider).
+    // 'throttle:widget' = 60 req/min per IP.
+    // Auth modes — see WidgetAuth middleware and ADR-0004:
+    //   widget:config  origin check only  (read-only + conversation start)
+    //   widget:token   Bearer JWT          (all mutating/polling endpoints)
+    //   widget         HMAC               (Reverb presence auth only)
     Route::prefix('public')->middleware('throttle:widget')->group(function () {
 
-        // Config: read-only branding, no HMAC needed.
+        // Read-only chatbot config — origin check only.
         Route::get(
             'chatbots/{public_id}/config',
             [PublicChatbotsController::class, 'config'],
         )->middleware('widget:config')->name('public.chatbots.config');
 
-        // All mutating + polling endpoints require HMAC.
-        Route::middleware('widget')->group(function () {
-            // Reverb presence channel auth for widget visitors.
-            Route::post(
-                'broadcasting/auth',
-                PublicBroadcastingAuthController::class,
-            )->name('public.broadcasting.auth');
+        // Start conversation — origin check only; returns session_token.
+        Route::post(
+            'conversations',
+            [PublicConversationsController::class, 'store'],
+        )->middleware('widget:config')->name('public.conversations.store');
 
-            Route::post(
-                'conversations',
-                [PublicConversationsController::class, 'store'],
-            )->name('public.conversations.store');
+        // Session-token protected endpoints.
+        Route::middleware('widget:token')->group(function () {
+            Route::patch(
+                'conversations/{id}',
+                [PublicConversationsController::class, 'updateVisitor'],
+            )->name('public.conversations.update');
 
             Route::post(
                 'conversations/{id}/messages',
@@ -105,6 +108,12 @@ Route::prefix('v1')->group(function () {
                 'messages/{id}/feedback',
                 [PublicMessagesController::class, 'feedback'],
             )->name('public.messages.feedback');
+
+            // Reverb presence channel auth for widget visitors (JWT replaces HMAC).
+            Route::post(
+                'broadcasting/auth',
+                PublicBroadcastingAuthController::class,
+            )->name('public.broadcasting.auth');
         });
     });
 });

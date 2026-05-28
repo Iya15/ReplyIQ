@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => ({
     __WIDGET_BASE__: JSON.stringify(
       process.env['WIDGET_BASE'] ?? 'https://cdn.replyiq.com/widget',
     ),
+    __API_BASE__: JSON.stringify(
+      process.env['WIDGET_API_BASE'] ?? 'https://api.replyiq.com',
+    ),
   },
   build: {
     lib: {

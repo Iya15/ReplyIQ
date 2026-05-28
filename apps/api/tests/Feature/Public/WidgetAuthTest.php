@@ -1,9 +1,14 @@
 <?php
 
 use App\Models\Chatbot;
+use App\Models\Conversation;
 use App\Models\Organization;
+use App\Services\Public\WidgetSessionToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
+use Lcobucci\JWT\Signer\Key\InMemory;
 
 uses(RefreshDatabase::class);
 
@@ -22,103 +27,107 @@ function authChatbot(array $settingsOverrides = []): array
     return [$org, $chatbot];
 }
 
-/**
- * Build a signed request header set for the given chatbot / visitor.
- *
- * @return array{X-RIQ-Signature: string, X-RIQ-Timestamp: string}
- */
-function makeWidgetHeaders(Chatbot $chatbot, string $visitorId, ?int $timestamp = null): array
+function makeSessionToken(Chatbot $chatbot, string $conversationId, string $visitorId): string
 {
-    $ts      = (string) ($timestamp ?? now()->timestamp);
-    $payload = "{$chatbot->public_id}:{$visitorId}:{$ts}";
-    $sig     = hash_hmac('sha256', $payload, $chatbot->settings->widget_secret);
-
-    return [
-        'X-RIQ-Signature' => $sig,
-        'X-RIQ-Timestamp' => $ts,
-    ];
+    return app(WidgetSessionToken::class)->issue($chatbot->public_id, $conversationId, $visitorId);
 }
 
-// ── HMAC validation ───────────────────────────────────────────────────────────
+// ── POST /conversations — widget:config (no HMAC required) ───────────────────
 
-it('accepts a request with a valid HMAC signature', function () {
+it('creates a conversation without auth headers and returns a session token', function () {
     [, $chatbot] = authChatbot();
     $visitorId   = (string) Str::uuid();
 
     $response = $this->postJson('/api/v1/public/conversations', [
         'public_id'  => $chatbot->public_id,
         'visitor_id' => $visitorId,
-    ], makeWidgetHeaders($chatbot, $visitorId));
-
-    $response->assertCreated();
-});
-
-it('rejects a request with an invalid HMAC signature', function () {
-    [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
-    $ts          = (string) now()->timestamp;
-
-    $response = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], [
-        'X-RIQ-Signature' => 'deadbeef' . str_repeat('0', 56), // wrong signature
-        'X-RIQ-Timestamp' => $ts,
     ]);
 
-    $response->assertUnauthorized()
-        ->assertJsonPath('error.code', 'invalid_signature');
+    $response->assertCreated()
+        ->assertJsonStructure(['data' => ['id'], 'session_token']);
+
+    expect($response->json('session_token'))->toBeString()->not->toBeEmpty();
 });
 
-it('rejects a request with an expired timestamp', function () {
-    [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
-    $staleTs     = now()->subMinutes(6)->timestamp; // 6 min ago > 5 min window
+// ── Token auth — widget:token ─────────────────────────────────────────────────
 
-    $response = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], makeWidgetHeaders($chatbot, $visitorId, $staleTs));
-
-    $response->assertUnauthorized()
-        ->assertJsonPath('error.code', 'timestamp_expired');
-});
-
-it('accepts a request whose timestamp is at the edge of the 5-minute window', function () {
-    [, $chatbot] = authChatbot();
-    $visitorId   = (string) Str::uuid();
-    $edgeTs      = now()->subMinutes(4)->subSeconds(59)->timestamp; // just inside window
-
-    $response = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], makeWidgetHeaders($chatbot, $visitorId, $edgeTs));
-
-    $response->assertCreated();
-});
-
-it('rejects a request with missing signature headers', function () {
-    [, $chatbot] = authChatbot();
-
-    $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => (string) Str::uuid(),
-    ])->assertUnauthorized()
-      ->assertJsonPath('error.code', 'missing_signature');
-});
-
-it('rejects a request with missing public_id', function () {
+it('returns 401 when no Bearer token is provided on a token-protected endpoint', function () {
     [, $chatbot] = authChatbot();
     $visitorId   = (string) Str::uuid();
 
-    $this->postJson('/api/v1/public/conversations', [
-        'visitor_id' => $visitorId,
-    ], makeWidgetHeaders($chatbot, $visitorId))
+    $conversation = Conversation::factory()->create([
+        'chatbot_id'      => $chatbot->id,
+        'organization_id' => $chatbot->organization_id,
+        'visitor_id'      => $visitorId,
+    ]);
+
+    $this->getJson("/api/v1/public/conversations/{$conversation->id}/messages")
         ->assertUnauthorized()
-        ->assertJsonPath('error.code', 'missing_public_id');
+        ->assertJsonPath('error.code', 'missing_token');
 });
 
-// ── Origin validation ─────────────────────────────────────────────────────────
+it('returns 401 when the Bearer token is malformed', function () {
+    [, $chatbot] = authChatbot();
+    $visitorId   = (string) Str::uuid();
+
+    $conversation = Conversation::factory()->create([
+        'chatbot_id'      => $chatbot->id,
+        'organization_id' => $chatbot->organization_id,
+        'visitor_id'      => $visitorId,
+    ]);
+
+    $this->withHeaders(['Authorization' => 'Bearer not.a.valid.jwt'])
+        ->getJson("/api/v1/public/conversations/{$conversation->id}/messages")
+        ->assertUnauthorized()
+        ->assertJsonPath('error.code', 'invalid_token');
+});
+
+it('returns 401 when the Bearer token is signed with the wrong key', function () {
+    [, $chatbot] = authChatbot();
+    $visitorId   = (string) Str::uuid();
+
+    $conversation = Conversation::factory()->create([
+        'chatbot_id'      => $chatbot->id,
+        'organization_id' => $chatbot->organization_id,
+        'visitor_id'      => $visitorId,
+    ]);
+
+    $fakeKey  = InMemory::plainText(str_repeat('x', 32));
+    $config   = Configuration::forSymmetricSigner(new Sha256(), $fakeKey);
+    $badToken = $config->builder()
+        ->issuedBy('replyiq.widget')
+        ->issuedAt(new DateTimeImmutable())
+        ->expiresAt((new DateTimeImmutable())->modify('+24 hours'))
+        ->withClaim('cid', $chatbot->public_id)
+        ->withClaim('cnv', (string) $conversation->id)
+        ->withClaim('vid', $visitorId)
+        ->getToken($config->signer(), $config->signingKey())
+        ->toString();
+
+    $this->withHeaders(['Authorization' => "Bearer {$badToken}"])
+        ->getJson("/api/v1/public/conversations/{$conversation->id}/messages")
+        ->assertUnauthorized()
+        ->assertJsonPath('error.code', 'invalid_token');
+});
+
+it('accepts a valid session token on a token-protected endpoint', function () {
+    [, $chatbot] = authChatbot();
+    $visitorId   = (string) Str::uuid();
+
+    $conversation = Conversation::factory()->create([
+        'chatbot_id'      => $chatbot->id,
+        'organization_id' => $chatbot->organization_id,
+        'visitor_id'      => $visitorId,
+    ]);
+
+    $token = makeSessionToken($chatbot, (string) $conversation->id, $visitorId);
+
+    $this->withHeaders(['Authorization' => "Bearer {$token}"])
+        ->getJson("/api/v1/public/conversations/{$conversation->id}/messages")
+        ->assertOk();
+});
+
+// ── Origin validation — widget:config mode (POST /conversations) ──────────────
 
 it('allows a request from a permitted domain', function () {
     [, $chatbot] = authChatbot(['allowed_domains' => ['mystore.com']]);
@@ -127,10 +136,7 @@ it('allows a request from a permitted domain', function () {
     $this->postJson('/api/v1/public/conversations', [
         'public_id'  => $chatbot->public_id,
         'visitor_id' => $visitorId,
-    ], array_merge(
-        makeWidgetHeaders($chatbot, $visitorId),
-        ['Origin' => 'https://mystore.com'],
-    ))->assertCreated();
+    ], ['Origin' => 'https://mystore.com'])->assertCreated();
 });
 
 it('blocks a request from a non-permitted domain when allowed_domains is set', function () {
@@ -140,11 +146,9 @@ it('blocks a request from a non-permitted domain when allowed_domains is set', f
     $this->postJson('/api/v1/public/conversations', [
         'public_id'  => $chatbot->public_id,
         'visitor_id' => $visitorId,
-    ], array_merge(
-        makeWidgetHeaders($chatbot, $visitorId),
-        ['Origin' => 'https://phishing.com'],
-    ))->assertUnauthorized()
-      ->assertJsonPath('error.code', 'origin_not_allowed');
+    ], ['Origin' => 'https://phishing.com'])
+        ->assertUnauthorized()
+        ->assertJsonPath('error.code', 'origin_not_allowed');
 });
 
 it('allows any origin when allowed_domains is empty', function () {
@@ -154,8 +158,5 @@ it('allows any origin when allowed_domains is empty', function () {
     $this->postJson('/api/v1/public/conversations', [
         'public_id'  => $chatbot->public_id,
         'visitor_id' => $visitorId,
-    ], array_merge(
-        makeWidgetHeaders($chatbot, $visitorId),
-        ['Origin' => 'https://any-random-site.com'],
-    ))->assertCreated();
+    ], ['Origin' => 'https://any-random-site.com'])->assertCreated();
 });

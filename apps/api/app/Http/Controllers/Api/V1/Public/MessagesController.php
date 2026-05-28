@@ -20,18 +20,21 @@ class MessagesController extends Controller
     public function feedback(Request $request, string $id): JsonResponse
     {
         $request->validate([
-            'public_id'  => ['required', 'string'],
-            'visitor_id' => ['required', 'string'],
-            'feedback'   => ['required', 'string', 'in:helpful,not_helpful'],
+            'feedback' => ['required', 'string', 'in:helpful,not_helpful'],
         ]);
 
         /** @var Chatbot $chatbot */
         $chatbot = app('currentChatbot');
 
-        // Load message → verify it belongs to this chatbot's conversation.
-        $message = Message::whereHas('conversation', function ($query) use ($chatbot, $request) {
+        // Under widget:token, visitor_id is authoritative from the JWT.
+        // Falls back to request body for backwards compatibility.
+        $visitorId = app()->bound('currentVisitorId')
+            ? (string) app('currentVisitorId')
+            : $request->input('visitor_id');
+
+        $message = Message::whereHas('conversation', function ($query) use ($chatbot, $visitorId) {
             $query->where('chatbot_id', $chatbot->id)
-                  ->where('visitor_id', $request->input('visitor_id'));
+                  ->where('visitor_id', $visitorId);
         })->find($id);
 
         if (! $message) {
@@ -40,7 +43,6 @@ class MessagesController extends Controller
             ]));
         }
 
-        // Only assistant messages can receive feedback.
         if ($message->role->value !== 'assistant') {
             abort(Response::HTTP_UNPROCESSABLE_ENTITY, json_encode([
                 'error' => ['code' => 'invalid_feedback_target', 'message' => 'Feedback can only be applied to assistant messages.'],

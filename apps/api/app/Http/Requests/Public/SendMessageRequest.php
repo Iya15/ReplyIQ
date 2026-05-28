@@ -14,9 +14,9 @@ class SendMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'public_id'  => ['required', 'string'],
-            'visitor_id' => ['required', 'string', 'max:64'],
-            'content'    => ['required', 'string', 'min:1', 'max:4000'],
+            // public_id and visitor_id are not required under widget:token auth
+            // (they come from the JWT); kept optional for backwards compatibility.
+            'content' => ['required', 'string', 'min:1', 'max:4000'],
         ];
     }
 }

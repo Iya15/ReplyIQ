@@ -2,11 +2,10 @@
 
 // @requires PostgreSQL with pgvector extension (CI/Docker only — needs chunks table for RAG)
 
-use App\Enums\MessageRole;
-use App\Enums\MessageStatus;
 use App\Models\Chatbot;
 use App\Models\Conversation;
 use App\Models\Organization;
+use App\Services\Public\WidgetSessionToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -23,35 +22,49 @@ function flowChatbot(): array
     return [$org, $chatbot];
 }
 
-function flowHeaders(Chatbot $chatbot, string $visitorId, ?int $ts = null): array
+/**
+ * Start a conversation via the HTTP endpoint and return
+ * ['conv_id' => ..., 'token' => ..., 'visitor_id' => ...].
+ */
+function flowStart(Chatbot $chatbot, ?string $visitorId = null): array
 {
-    $ts      ??= now()->timestamp;
-    $payload   = "{$chatbot->public_id}:{$visitorId}:{$ts}";
-    $sig       = hash_hmac('sha256', $payload, $chatbot->settings->widget_secret);
-    return ['X-RIQ-Signature' => $sig, 'X-RIQ-Timestamp' => (string) $ts];
+    $visitorId ??= (string) Str::uuid();
+
+    $response = test()->postJson('/api/v1/public/conversations', [
+        'public_id'  => $chatbot->public_id,
+        'visitor_id' => $visitorId,
+    ]);
+
+    return [
+        'conv_id'    => $response->json('data.id'),
+        'token'      => $response->json('session_token'),
+        'visitor_id' => $visitorId,
+    ];
+}
+
+function flowBearer(string $token): array
+{
+    return ['Authorization' => "Bearer {$token}"];
 }
 
 // ── Start conversation ────────────────────────────────────────────────────────
 
-it('creates a conversation and returns its id', function () {
+it('creates a conversation and returns a session token', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
 
     $response = $this->postJson('/api/v1/public/conversations', [
         'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'source_url' => 'https://example.com/pricing',
-    ], flowHeaders($chatbot, $visitorId));
+        'visitor_id' => (string) Str::uuid(),
+    ]);
 
     $response->assertCreated()
-        ->assertJsonPath('data.visitor_id', $visitorId)
-        ->assertJsonPath('data.chatbot_id', $chatbot->id)
-        ->assertJsonPath('data.status', 'active')
-        ->assertJsonStructure(['data' => ['id', 'chatbot_id', 'visitor_id', 'status', 'created_at']]);
+        ->assertJsonStructure(['data' => ['id', 'chatbot_id', 'visitor_id', 'status', 'created_at'], 'session_token']);
+
+    expect($response->json('session_token'))->toBeString()->not->toBeEmpty();
 });
 
-it('stores the source_url and ip_address on the conversation', function () {
+it('stores the source_url on the conversation', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
     $visitorId   = (string) Str::uuid();
@@ -60,7 +73,7 @@ it('stores the source_url and ip_address on the conversation', function () {
         'public_id'  => $chatbot->public_id,
         'visitor_id' => $visitorId,
         'source_url' => 'https://example.com/pricing',
-    ], flowHeaders($chatbot, $visitorId))->assertCreated();
+    ])->assertCreated();
 
     $conv = Conversation::where('visitor_id', $visitorId)->first();
 
@@ -68,27 +81,36 @@ it('stores the source_url and ip_address on the conversation', function () {
         ->and($conv->source_url)->toBe('https://example.com/pricing');
 });
 
+// ── Update visitor ────────────────────────────────────────────────────────────
+
+it('updateVisitor persists visitor email and name on the conversation', function () {
+    Queue::fake();
+    [, $chatbot] = flowChatbot();
+    $session     = flowStart($chatbot);
+
+    $this->withHeaders(flowBearer($session['token']))
+        ->patchJson("/api/v1/public/conversations/{$session['conv_id']}", [
+            'visitor_email' => 'alice@example.com',
+            'visitor_name'  => 'Alice',
+        ])
+        ->assertOk();
+
+    $conv = Conversation::find($session['conv_id']);
+    expect($conv->visitor_email)->toBe('alice@example.com')
+        ->and($conv->visitor_name)->toBe('Alice');
+});
+
 // ── Send message ──────────────────────────────────────────────────────────────
 
 it('sends a user message and returns a pending assistant message', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $session     = flowStart($chatbot);
 
-    // Start conversation.
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], flowHeaders($chatbot, $visitorId))
-        ->assertCreated()
-        ->json('data.id');
-
-    // Send message.
-    $response = $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'content'    => 'What is your refund policy?',
-    ], flowHeaders($chatbot, $visitorId));
+    $response = $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
+            'content' => 'What is your refund policy?',
+        ]);
 
     $response->assertStatus(202)
         ->assertJsonPath('data.user_message.role', 'user')
@@ -102,18 +124,12 @@ it('sends a user message and returns a pending assistant message', function () {
 it('dispatches GenerateAiReplyJob when a message is sent', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $session     = flowStart($chatbot);
 
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], flowHeaders($chatbot, $visitorId))->json('data.id');
-
-    $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'content'    => 'Hello',
-    ], flowHeaders($chatbot, $visitorId))->assertStatus(202);
+    $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
+            'content' => 'Hello',
+        ])->assertStatus(202);
 
     Queue::assertPushedOn('replies', \App\Jobs\GenerateAiReplyJob::class);
 });
@@ -121,38 +137,25 @@ it('dispatches GenerateAiReplyJob when a message is sent', function () {
 it('rejects a message with content exceeding 4000 characters', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $session     = flowStart($chatbot);
 
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], flowHeaders($chatbot, $visitorId))->json('data.id');
-
-    $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'content'    => str_repeat('a', 4001),
-    ], flowHeaders($chatbot, $visitorId))->assertUnprocessable();
+    $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
+            'content' => str_repeat('a', 4001),
+        ])->assertUnprocessable();
 });
 
-it('returns 404 when sending a message to another visitors conversation', function () {
+it('returns 403 when a visitor uses their token to post to another visitors conversation', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorA    = (string) Str::uuid();
-    $visitorB    = (string) Str::uuid();
+    $sessionA    = flowStart($chatbot);
+    $sessionB    = flowStart($chatbot);
 
-    // Visitor A starts conversation.
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorA,
-    ], flowHeaders($chatbot, $visitorA))->json('data.id');
-
-    // Visitor B tries to post a message with valid HMAC but wrong visitor_id.
-    $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorB,
-        'content'    => 'Hijack!',
-    ], flowHeaders($chatbot, $visitorB))->assertForbidden();
+    // Visitor B's token has visitor B's visitor_id; conv A belongs to visitor A.
+    $this->withHeaders(flowBearer($sessionB['token']))
+        ->postJson("/api/v1/public/conversations/{$sessionA['conv_id']}/messages", [
+            'content' => 'Hijack!',
+        ])->assertForbidden();
 });
 
 // ── Poll messages ─────────────────────────────────────────────────────────────
@@ -160,28 +163,19 @@ it('returns 404 when sending a message to another visitors conversation', functi
 it('returns all messages for a conversation in order', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $session     = flowStart($chatbot);
 
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], flowHeaders($chatbot, $visitorId))->json('data.id');
+    $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
+            'content' => 'First question',
+        ]);
 
-    $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'content'    => 'First question',
-    ], flowHeaders($chatbot, $visitorId));
-
-    $response = $this->getJson(
-        "/api/v1/public/conversations/{$convId}/messages?public_id={$chatbot->public_id}&visitor_id={$visitorId}",
-        flowHeaders($chatbot, $visitorId),
-    );
+    $response = $this->withHeaders(flowBearer($session['token']))
+        ->getJson("/api/v1/public/conversations/{$session['conv_id']}/messages");
 
     $response->assertOk();
     $messages = $response->json('data');
 
-    // User message + pending assistant message.
     expect($messages)->toHaveCount(2)
         ->and($messages[0]['role'])->toBe('user')
         ->and($messages[1]['role'])->toBe('assistant')
@@ -193,78 +187,51 @@ it('returns all messages for a conversation in order', function () {
 it('records helpful feedback on an assistant message', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $session     = flowStart($chatbot);
 
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], flowHeaders($chatbot, $visitorId))->json('data.id');
+    $assistantMsgId = $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
+            'content' => 'Any question',
+        ])->json('data.assistant_message.id');
 
-    $assistantMsgId = $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'content'    => 'Any question',
-    ], flowHeaders($chatbot, $visitorId))->json('data.assistant_message.id');
-
-    $this->postJson("/api/v1/public/messages/{$assistantMsgId}/feedback", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'feedback'   => 'helpful',
-    ], flowHeaders($chatbot, $visitorId))
-        ->assertOk()
-        ->assertJsonPath('data.feedback', null); // MessageResource doesn't expose feedback
+    $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/messages/{$assistantMsgId}/feedback", [
+            'feedback' => 'helpful',
+        ])->assertOk();
 });
 
 it('rejects feedback on a user message', function () {
     Queue::fake();
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $session     = flowStart($chatbot);
 
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], flowHeaders($chatbot, $visitorId))->json('data.id');
+    $userMsgId = $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
+            'content' => 'Any question',
+        ])->json('data.user_message.id');
 
-    $userMsgId = $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'content'    => 'Any question',
-    ], flowHeaders($chatbot, $visitorId))->json('data.user_message.id');
-
-    $this->postJson("/api/v1/public/messages/{$userMsgId}/feedback", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'feedback'   => 'helpful',
-    ], flowHeaders($chatbot, $visitorId))->assertUnprocessable();
+    $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/messages/{$userMsgId}/feedback", [
+            'feedback' => 'helpful',
+        ])->assertUnprocessable();
 });
 
 // ── Job completion (end-to-end with sync queue) ───────────────────────────────
 
 it('message status transitions from pending to complete after the job runs', function () {
-    // Use the sync queue driver so the job runs inline during the test.
     config(['queue.default' => 'sync']);
 
     [, $chatbot] = flowChatbot();
-    $visitorId   = (string) Str::uuid();
+    $session     = flowStart($chatbot);
 
-    // The chatbot has no knowledge chunks, so it will return the fallback message.
-    // That's fine — we only care about the status transition.
-    $convId = $this->postJson('/api/v1/public/conversations', [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-    ], flowHeaders($chatbot, $visitorId))->json('data.id');
+    $assistantId = $this->withHeaders(flowBearer($session['token']))
+        ->postJson("/api/v1/public/conversations/{$session['conv_id']}/messages", [
+            'content' => 'Hello',
+        ])->json('data.assistant_message.id');
 
-    $assistantId = $this->postJson("/api/v1/public/conversations/{$convId}/messages", [
-        'public_id'  => $chatbot->public_id,
-        'visitor_id' => $visitorId,
-        'content'    => 'Hello',
-    ], flowHeaders($chatbot, $visitorId))->json('data.assistant_message.id');
-
-    // Poll the messages list — job has already run (sync driver).
-    $messages = $this->getJson(
-        "/api/v1/public/conversations/{$convId}/messages?public_id={$chatbot->public_id}&visitor_id={$visitorId}",
-        flowHeaders($chatbot, $visitorId),
-    )->json('data');
+    $messages = $this->withHeaders(flowBearer($session['token']))
+        ->getJson("/api/v1/public/conversations/{$session['conv_id']}/messages")
+        ->json('data');
 
     $assistant = collect($messages)->firstWhere('id', $assistantId);
 

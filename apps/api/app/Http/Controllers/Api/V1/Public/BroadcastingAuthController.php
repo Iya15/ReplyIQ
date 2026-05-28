@@ -16,50 +16,51 @@ class BroadcastingAuthController extends Controller
      *
      * Authenticate a widget visitor for Reverb presence channels.
      *
-     * The WidgetAuth middleware runs first and validates the HMAC signature,
-     * so by the time we get here we know the request is legitimate.
+     * The widget:token middleware already verified the session JWT, so
+     * visitor_id and conversation_id are authoritative from the container.
      *
-     * Returns a standard Pusher-compatible presence auth response so that
-     * Laravel Echo can subscribe to `presence-chat.{conversationId}`.
-     *
-     * Auth string format (Pusher protocol):
-     *   signature = HMAC-SHA256(socket_id + ":" + channel_name + ":" + channel_data, app_secret)
-     *   auth      = app_key + ":" + signature
+     * Returns a Pusher-compatible presence auth response:
+     *   auth         = HMAC-SHA256(socket_id + ":" + channel_name + ":" + channel_data, app_secret)
+     *   channel_data = {"user_id": visitor_id, "user_info": {"type": "widget"}}
      */
     public function __invoke(Request $request): JsonResponse
     {
         $request->validate([
             'socket_id'    => ['required', 'string'],
             'channel_name' => ['required', 'string', 'regex:/^presence-chat\./'],
-            'visitor_id'   => ['required', 'string'],
         ]);
 
         $socketId    = $request->input('socket_id');
         $channelName = $request->input('channel_name');
-        $visitorId   = $request->input('visitor_id');
 
-        // Extract conversationId from "presence-chat.{id}".
-        $conversationId = (string) substr($channelName, strlen('presence-chat.'));
+        // JWT claims bound by widget:token middleware.
+        $visitorId      = (string) app('currentVisitorId');
+        $conversationId = (string) app('currentConversationId');
+
+        // Verify the channel matches the conversation in the JWT.
+        $expectedChannel = 'presence-chat.' . $conversationId;
+        if ($channelName !== $expectedChannel) {
+            abort(Response::HTTP_FORBIDDEN, 'Channel does not match session.');
+        }
 
         /** @var Chatbot $chatbot */
         $chatbot = app('currentChatbot');
 
-        // Verify the conversation belongs to this chatbot and this visitor.
-        $conversation = Conversation::where('chatbot_id', $chatbot->id)
+        // Verify the conversation still exists and belongs to this chatbot.
+        $exists = Conversation::where('id', $conversationId)
+            ->where('chatbot_id', $chatbot->id)
             ->where('visitor_id', $visitorId)
-            ->find($conversationId);
+            ->exists();
 
-        if (! $conversation) {
+        if (! $exists) {
             abort(Response::HTTP_FORBIDDEN, 'Conversation not found.');
         }
 
-        // Build presence channel data (identifies the visitor in the channel).
         $channelData = (string) json_encode([
             'user_id'   => $visitorId,
             'user_info' => ['type' => 'widget'],
         ]);
 
-        // Generate Pusher-compatible HMAC auth signature.
         $appKey    = (string) config('broadcasting.connections.reverb.key');
         $appSecret = (string) config('broadcasting.connections.reverb.secret');
 
