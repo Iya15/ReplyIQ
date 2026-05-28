@@ -18,9 +18,7 @@ return new class extends Migration
                 ->on('organizations')
                 ->onDelete('cascade');
 
-            // CITEXT so invite lookup is case-insensitive
             $table->string('email', 255);
-            DB::statement('ALTER TABLE invitations ALTER COLUMN email TYPE CITEXT');
 
             // role: owner | admin | member
             $table->string('role', 50)->default('member');
@@ -38,6 +36,10 @@ return new class extends Migration
             $table->timestampTz('accepted_at')->nullable();
             $table->timestampTz('created_at')->useCurrent();
         });
+
+        // CITEXT so invite lookup is case-insensitive. Must run after Schema::create
+        // has executed the CREATE TABLE statement, not inside the callback.
+        DB::statement('ALTER TABLE invitations ALTER COLUMN email TYPE CITEXT');
     }
 
     public function down(): void
