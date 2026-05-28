@@ -197,54 +197,84 @@ return [
     */
 
     'defaults' => [
-        'supervisor-1' => [
-            'connection' => 'redis',
-            'queue' => ['default'],
-            'balance' => 'auto',
+        // Default queue: low-priority background tasks (notifications, analytics, etc.)
+        'supervisor-default' => [
+            'connection'          => 'redis',
+            'queue'               => ['default'],
+            'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses' => 1,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 128,
-            'tries' => 1,
-            'timeout' => 60,
-            'nice' => 0,
+            'maxProcesses'        => 1,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 128,
+            'tries'               => 3,
+            'timeout'             => 90,
+            'nice'                => 5,
         ],
 
-        'ingestion' => [
-            'connection' => 'redis',
-            'queue' => ['ingestion'],
-            'balance' => 'simple',
-            'processes' => 2,
-            'maxTime' => 0,
-            'maxJobs' => 0,
+        // Replies queue: AI response generation — latency-sensitive, separate from
+        // ingestion so large crawl jobs cannot delay chat reply delivery.
+        'supervisor-replies' => [
+            'connection'          => 'redis',
+            'queue'               => ['replies'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 3,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            // Each reply job has a 60s timeout; 90s gives Horizon time to record failures.
+            'memory'              => 256,
+            'tries'               => 3,
+            'timeout'             => 90,
+            'nice'                => 0,
+        ],
+
+        // Ingestion queue: document processing + crawling — CPU/memory-heavy, lower priority.
+        'supervisor-ingestion' => [
+            'connection'  => 'redis',
+            'queue'       => ['ingestion'],
+            'balance'     => 'simple',
+            'processes'   => 2,
+            'maxTime'     => 0,
+            'maxJobs'     => 0,
             // Embeddings for large docs can use ~200 MB; budget headroom above that.
-            'memory' => 512,
-            'tries' => 3,
+            'memory'      => 512,
+            'tries'       => 3,
             // 30s above the job's 600s timeout so Horizon can record the failure.
-            'timeout' => 630,
-            'nice' => 0,
+            'timeout'     => 630,
+            'nice'        => 10,
         ],
     ],
 
     'environments' => [
         'production' => [
-            'supervisor-1' => [
-                'maxProcesses' => 10,
-                'balanceMaxShift' => 1,
+            // At 100 concurrent conversations × 10 messages, with ~4s avg reply time,
+            // 20 workers sustains ~300 replies/min without queue build-up.
+            'supervisor-replies' => [
+                'maxProcesses'    => 20,
+                'balanceMaxShift' => 3,
                 'balanceCooldown' => 3,
             ],
-            'ingestion' => [
-                'processes' => 4,
+            // 8 workers handle ~50 concurrent 10-page PDFs within the 10-minute target.
+            'supervisor-ingestion' => [
+                'processes' => 8,
+            ],
+            'supervisor-default' => [
+                'maxProcesses'    => 5,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 5,
             ],
         ],
 
         'local' => [
-            'supervisor-1' => [
-                'maxProcesses' => 3,
+            'supervisor-replies' => [
+                'maxProcesses' => 2,
             ],
-            'ingestion' => [
+            'supervisor-ingestion' => [
                 'processes' => 1,
+            ],
+            'supervisor-default' => [
+                'maxProcesses' => 2,
             ],
         ],
     ],
